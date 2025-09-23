@@ -191,3 +191,24 @@ def delete_media_file(
     crud_animal.delete_media(db, media_id)
     
     return None
+
+@router.get("/animals/{animal_id}/media", response_model=List[MediaOut], tags=["Animales", "Media"])
+def get_all_media_for_animal(
+    animal_id: int,
+    db: Session = Depends(get_db)
+):
+    db_animal = crud_animal.get_animal(db, animal_id)
+    if not db_animal:
+        raise HTTPException(status_code=404, detail="Animal no encontrado")
+        
+    media_list = crud_animal.get_media_by_animal_id(db, animal_id=animal_id)
+    return media_list
+
+@router.get("/media/", response_model=List[MediaOut], tags=["Media"])
+def get_all_media_files(
+    skip: int = 0,
+    limit: int = 100,
+    db: Session = Depends(get_db)
+):
+    media_list = crud_animal.get_all_media(db, skip=skip, limit=limit)
+    return media_list

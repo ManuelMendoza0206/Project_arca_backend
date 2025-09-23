@@ -160,6 +160,12 @@ def delete_media(db: Session, media_id: int) -> Optional[MediaAnimal]:
         db.commit()
     return db_media
 
+def get_media_by_animal_id(db: Session, animal_id: int) -> List[MediaAnimal]:
+    return db.query(MediaAnimal).filter(MediaAnimal.animal_id == animal_id).all()
+
+def get_all_media(db: Session, skip: int = 0, limit: int = 100) -> List[MediaAnimal]:
+    return db.query(MediaAnimal).offset(skip).limit(limit).all()
+
 
 # --- Animales Favoritos ---
 
