@@ -12,9 +12,9 @@ class Settings(BaseSettings):
     CORS_ORIGINS: List[AnyHttpUrl] | List[str] = ["http://localhost:3000"]
     
     #
-    CLOUDINARY_CLOUD_NAME: str="djne2ckoy"
-    CLOUDINARY_API_KEY: str="376362916615896"
-    CLOUDINARY_API_SECRET: str="31MZumJ8CRWjsck3XjGa4a6LxaI"
+    CLOUDINARY_CLOUD_NAME: str
+    CLOUDINARY_API_KEY: str
+    CLOUDINARY_API_SECRET: str
     #
 
     @validator("CORS_ORIGINS", pre=True)
