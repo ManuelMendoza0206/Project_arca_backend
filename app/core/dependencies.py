@@ -7,6 +7,8 @@ from app.core.config import settings
 from app.db.session import get_db
 from app.crud import user as crud_user
 from app.models.user import User
+from app.core.enums import UserRole
+
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
 
@@ -41,3 +43,20 @@ def require_admin_user(current_user: User = Depends(get_current_active_user)):
     if role_name == "administrador" or getattr(current_user, "role_id", None) == 1:
         return current_user
     raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Permisos insuficientes (admin requerido)")
+
+
+def require_animal_management_permission(current_user: User = Depends(get_current_active_user)):
+    user_role = getattr(current_user.role, 'nombre_rol', '').lower()
+    
+    allowed_roles = {
+        UserRole.ADMINISTRADOR.value.lower(),
+        UserRole.VETERINARIO.value.lower(),
+        UserRole.CUIDADOR.value.lower()
+    }
+
+    if user_role not in allowed_roles:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Permisos insuficientes para gestionar animales"
+        )
+    return current_user

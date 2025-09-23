@@ -11,6 +11,12 @@ class Settings(BaseSettings):
     MEDIA_DIR: str = "./media"
     CORS_ORIGINS: List[AnyHttpUrl] | List[str] = ["http://localhost:3000"]
     
+    #
+    CLOUDINARY_CLOUD_NAME: str
+    CLOUDINARY_API_KEY: str
+    CLOUDINARY_API_SECRET: str
+    #
+
     @validator("CORS_ORIGINS", pre=True)
     def assemble_cors_origins(cls, v: Union[str, List[str]]):
         if isinstance(v, str):

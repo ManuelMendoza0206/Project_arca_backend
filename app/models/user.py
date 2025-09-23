@@ -23,3 +23,6 @@ class User(Base):
     participaciones_encuestas = relationship("ParticipacionEncuesta", back_populates="usuario")
     trivias_creadas = relationship("Trivia", back_populates="usuario")
     participaciones_trivia = relationship("ParticipacionTrivia", back_populates="usuario")
+
+#   
+    animales_favoritos = relationship("AnimalFavorito", back_populates="usuario", cascade="all, delete-orphan")

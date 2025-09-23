@@ -5,3 +5,10 @@ class UserRole(str, Enum):
     VETERINARIO = "veterinario"
     CUIDADOR = "cuidador"
     VISITANTE = "visitante"
+
+class AnimalState(str, Enum):
+    SALUDABLE = "Saludable"
+    EN_TRATAMIENTO = "En tratamiento"
+    EN_CUARENTENA = "En cuarentena"
+    TRASLADADO = "Trasladado"
+    FALLECIDO = "Fallecido"
