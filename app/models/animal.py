@@ -68,7 +68,7 @@ class MediaAnimal(Base):
 
     id_media = Column("id_media", Integer, primary_key=True, autoincrement=True)
     animal_id = Column("animals_id_animal", Integer, ForeignKey("animals.id_animal"), nullable=False)
-    tipo_medio = Column(Boolean, nullable=False) 
+    tipo_medio = Column(String(50))
     url = Column(String(200), nullable=False)
     titulo = Column(String(150), nullable=False)
     descripcion = Column(Text, nullable=True)

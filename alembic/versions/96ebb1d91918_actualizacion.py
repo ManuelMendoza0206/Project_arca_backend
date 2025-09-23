@@ -1,8 +1,8 @@
-"""Actualizacion animals
+"""Actualizacion 
 
-Revision ID: be3f03f7e629
-Revises: 06bbdf3830f2
-Create Date: 2025-09-22 23:28:01.287643
+Revision ID: 96ebb1d91918
+Revises: 6fd3b1e8a1f7
+Create Date: 2025-09-23 12:11:56.334428
 
 """
 from typing import Sequence, Union
@@ -12,8 +12,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = 'be3f03f7e629'
-down_revision: Union[str, Sequence[str], None] = '06bbdf3830f2'
+revision: str = '96ebb1d91918'
+down_revision: Union[str, Sequence[str], None] = '6fd3b1e8a1f7'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

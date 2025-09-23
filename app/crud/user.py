@@ -1,4 +1,4 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy.exc import IntegrityError
 from typing import List, Optional, Any
 from app.models.user import User
@@ -17,8 +17,8 @@ def _resolve_visitante_role_id(db: Session) -> int:
 def get_user(db: Session, user_id: int) -> Optional[User]:
     return db.query(User).filter(User.id == user_id).first()
 
-def get_user_by_email(db: Session, email: str) -> Optional[User]:
-    return db.query(User).filter(User.email == _normalize_email(email)).first()
+def get_user_by_email(db: Session, email: str) -> User | None:
+    return db.query(User).options(joinedload(User.role)).filter(User.email == email).first()
 
 def get_users(db: Session, skip: int = 0, limit: int = 100) -> List[User]:
     return db.query(User).order_by(User.id).offset(skip).limit(limit).all()

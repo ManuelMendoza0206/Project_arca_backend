@@ -17,6 +17,7 @@ class MediaCreate(MediaBase):
 class MediaOut(MediaBase):
     id_media: int
     public_id: Optional[str] = None
+    tipo_medio: str
     class Config:
         from_attributes = True
 

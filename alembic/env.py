@@ -24,7 +24,6 @@ fileConfig(config.config_file_name)
 
 config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
 
-# --- AÑADE ESTAS LÍNEAS PARA DEPURAR ---
 print("--- INICIO DEPURACIÓN ALEMBIC ---")
 # La '!r' nos mostrará la representación "cruda" del string, revelando caracteres ocultos
 print(f"URL leída: {settings.DATABASE_URL!r}")

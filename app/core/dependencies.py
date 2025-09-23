@@ -46,8 +46,7 @@ def require_admin_user(current_user: User = Depends(get_current_active_user)):
 
 
 def require_animal_management_permission(current_user: User = Depends(get_current_active_user)):
-    user_role = getattr(current_user.role, 'nombre_rol', '').lower()
-    
+    user_role = getattr(current_user.role, 'name', '').lower()
     allowed_roles = {
         UserRole.ADMINISTRADOR.value.lower(),
         UserRole.VETERINARIO.value.lower(),
