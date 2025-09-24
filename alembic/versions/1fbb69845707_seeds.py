@@ -9,16 +9,10 @@ from alembic import op
 import sqlalchemy as sa
 
 
-revision = '913352dc0587'  
-down_revision = '5de33da55aa1'
+revision = '1fbb69845707'  
+down_revision = 'beac011b9977'
 branch_labels = None
 depends_on = None
-
-
-
-
-
-
 
 
 def upgrade() -> None:
@@ -36,3 +30,16 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     op.execute("DELETE FROM roles WHERE id IN (1, 2, 3, 4);")
+
+
+
+
+
+
+
+
+
+
+
+
+
