@@ -6,6 +6,23 @@ from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 from alembic import context
 
+
+# --- CÓDIGO DE DEPURACIÓN PARA LISTAR ARCHIVOS ---
+import os
+print("--- LISTANDO ARCHIVOS DE MIGRACIÓN EN RENDER ---")
+# Construye la ruta a la carpeta 'versions' desde la ubicación de este archivo
+versions_path = os.path.join(os.path.dirname(__file__), 'versions')
+try:
+    # Lista todos los archivos y carpetas dentro de 'versions'
+    files_in_dir = os.listdir(versions_path)
+    print(f"Archivos encontrados en la ruta '{versions_path}':")
+    for file_name in files_in_dir:
+        print(f"- {file_name}")
+except Exception as e:
+    print(f"No se pudo leer la carpeta 'versions'. Error: {e}")
+print("---------------------------------------------")
+# --- FIN DEL CÓDIGO DE DEPURACIÓN ---
+
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 
