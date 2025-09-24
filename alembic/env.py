@@ -24,12 +24,6 @@ fileConfig(config.config_file_name)
 
 config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
 
-print("--- INICIO DEPURACIÓN ALEMBIC ---")
-# La '!r' nos mostrará la representación "cruda" del string, revelando caracteres ocultos
-print(f"URL leída: {settings.DATABASE_URL!r}")
-print(f"Tipo de variable: {type(settings.DATABASE_URL)}")
-print("--- FIN DEPURACIÓN ALEMBIC ---")
-# --- FIN DEPURACIÓN ---
 
 
 target_metadata = Base.metadata
