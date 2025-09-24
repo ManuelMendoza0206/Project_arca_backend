@@ -1,8 +1,8 @@
 """TODO
 
-Revision ID: 6fd3b1e8a1f7
+Revision ID: 5de33da55aa1
 Revises: 
-Create Date: 2025-09-23 09:22:11.208804
+Create Date: 2025-09-23 21:26:41.833621
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '6fd3b1e8a1f7'
+revision: str = '5de33da55aa1'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -129,7 +129,7 @@ def upgrade() -> None:
     op.create_table('media_animal',
     sa.Column('id_media', sa.Integer(), autoincrement=True, nullable=False),
     sa.Column('animals_id_animal', sa.Integer(), nullable=False),
-    sa.Column('tipo_medio', sa.Boolean(), nullable=False),
+    sa.Column('tipo_medio', sa.String(length=50), nullable=True),
     sa.Column('url', sa.String(length=200), nullable=False),
     sa.Column('titulo', sa.String(length=150), nullable=False),
     sa.Column('descripcion', sa.Text(), nullable=True),
