@@ -8,8 +8,9 @@ from app.schemas.user import UserOut, AdminUserCreate, AdminUserUpdate
 from app.core.dependencies import require_admin_user
 
 #pagination
-from fastapi_pagination import Page, paginate
+from fastapi_pagination import Page
 from app.schemas.user import UserOutWithRole 
+from fastapi_pagination.ext.sqlalchemy import paginate
 
 router = APIRouter(
     dependencies=[Depends(require_admin_user)]  
@@ -18,6 +19,8 @@ router = APIRouter(
 @router.get("/users", response_model=Page[UserOutWithRole], dependencies=[Depends(require_admin_user)])
 def admin_list_users(db: Session = Depends(get_db)):
     return paginate(crud_user.get_users_query(db=db))
+
+
 
 @router.get("/users/{user_id}", response_model=UserOut)
 def admin_get_user(user_id: int, db: Session = Depends(get_db)):

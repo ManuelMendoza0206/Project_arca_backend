@@ -69,7 +69,7 @@ class User(Base):
 
         normalized_username = username.strip()
         #solo alfanumerico
-        if not re.match("^[a-zA-Z0-9_.-]+$", normalized_username):
-             raise ValueError("El nombre de usuario solo puede contener letras, numeros, _, . y -")
+        #if not re.match("^[a-zA-Z0-9_.-]+$", normalized_username):
+        #     raise ValueError("El nombre de usuario solo puede contener letras, numeros, _, . y -")
 
         return normalized_username

@@ -26,7 +26,7 @@ app.add_middleware(
 # Routers
 app.include_router(auth.router, prefix="/zooconnect/auth", tags=["auth"])
 app.include_router(admin_users.router, prefix="/zooconnect/admin_users", tags=["admin"])
-app.include_router(animals.router, prefix="/zooconnect/animals", tags=["animals"])
+app.include_router(animals.router, prefix="/zooconnect/animals")
 app.include_router(surveys.router, prefix="/zooconnect/surveys", tags=["surveys"])
 app.include_router(trivia.router, prefix="/zooconnect/trivia", tags=["trivia"])
 app.include_router(favorite_animals.router, prefix="/zooconnect/favorite_animals", tags=["user-favorite_animals"])
