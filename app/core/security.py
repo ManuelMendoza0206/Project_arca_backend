@@ -38,3 +38,5 @@ def create_refresh_token(subject: str, expires_days: int | None = None, device_i
     }
     token = jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
     return {"token": token, "jti": jti, "expires_at": expires, "device_info": device_info}
+#sistema actual stateless, el token se mantiene activo
+#implementacion de hibrido: Access Tokens Stateless y Refresh Tokens Stateful.

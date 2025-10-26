@@ -48,6 +48,7 @@ class UserOut(BaseModel):
     email: EmailStr
     username: str
     is_active: bool
+    is_admin: bool
     role_id: int
     photo_url: Optional[str] = None 
     created_at: datetime 

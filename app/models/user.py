@@ -35,6 +35,7 @@ class User(Base):
     participaciones_trivia = relationship("ParticipacionTrivia", back_populates="usuario")   
     animales_favoritos = relationship("AnimalFavorito", back_populates="usuario", cascade="all, delete-orphan")
     #Pruebas
+    #propeidades hibridas
     @hybrid_property
     def is_admin(self):
 

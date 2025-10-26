@@ -1,15 +1,17 @@
 from pydantic_settings import BaseSettings
-from pydantic import AnyHttpUrl, validator
+from pydantic import AnyHttpUrl, field_validator
 from typing import List, Union
 
 class Settings(BaseSettings):
+    #heredando de basesettings indicamos que no sea un basenormal y que lea automaticamente las varibles de entorno
+    #del .en
     DATABASE_URL: str
     SECRET_KEY: str
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
     REFRESH_TOKEN_EXPIRE_DAYS: int = 30
     MEDIA_DIR: str = "./media"
-    CORS_ORIGINS: List[AnyHttpUrl] | List[str] = ["http://localhost:3000"]
+    CORS_ORIGINS: List[str] = ["http://localhost:3000"]
     DEFAULT_ADMIN_EMAIL: str
     DEFAULT_ADMIN_PASSWORD: str
     #
@@ -18,8 +20,9 @@ class Settings(BaseSettings):
     CLOUDINARY_API_SECRET: str
     #
 
-    @validator("CORS_ORIGINS", pre=True)
-    def assemble_cors_origins(cls, v: Union[str, List[str]]):
+    @field_validator("CORS_ORIGINS", mode='before')
+    @classmethod
+    def assemble_cors_origins(cls, v: str | List[str]):
         if isinstance(v, str):
             return [i.strip() for i in v.split(",") if i.strip()]
         return v
