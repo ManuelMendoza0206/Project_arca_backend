@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from jose import jwt, JWTError
 
 from app.db.session import get_db
-from app.schemas.user import UserCreate, UserOut
+from app.schemas.user import UserCreate, UserOut, UserUpdateProfile
 from app.schemas.auth import LoginRequest, TokenResponse, TokenRefreshRequest
 from app.crud import user as crud_user
 from app.crud import token as crud_token
@@ -136,3 +136,22 @@ def reset_password(body: ResetPasswordRequest, db: Session = Depends(get_db)):
     crud_token.delete_reset_token(db, token=body.token)
     
     return {"msg": "Contraseña actualizada exitosamente"}
+
+#put user
+@router.put("/update-profile", response_model=UserOut)
+async def update_users_me(
+    user_in: UserUpdateProfile,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user) 
+):
+
+    if user_in.email and user_in.email != current_user.email:
+        existing_user_with_new_email = crud_user.get_user_by_email(db, email=user_in.email)
+        if existing_user_with_new_email: 
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Este correo electronico ya esta registrado por otro usuario",
+            )
+    
+    updated_user = crud_user.update_own_profile(db=db, db_user_to_update=current_user, user_in=user_in)
+    return updated_user
