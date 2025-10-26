@@ -15,11 +15,9 @@ from app.models.user import User
 router = APIRouter()
 
 
-def _get_role_claim(user):
-    if hasattr(user, "role") and user.role is not None:
+def _get_role_claim(user: User) -> str | None:
+    if user.role:
         return user.role.name
-    elif hasattr(user, "role_id"):
-        return user.role_id
     return None
 
 def _issue_tokens_for_user(user, db: Session):
@@ -32,11 +30,11 @@ def _issue_tokens_for_user(user, db: Session):
     )
 
     return access_token, rt["token"]
-
+#crud_user.create_public_user ya maneja IntegrityError y lanza un HTTPException 409
 @router.post("/register", response_model=UserOut, status_code=201)
 def register(user_in: UserCreate, db: Session = Depends(get_db)):
-    if crud_user.get_user_by_email(db, user_in.email):
-        raise HTTPException(status_code=400, detail="Email ya registrado")
+    #if crud_user.get_user_by_email(db, user_in.email):
+    #    raise HTTPException(status_code=400, detail="Email ya registrado")
     return crud_user.create_public_user(db=db, user_in=user_in)
 
 @router.post("/login", response_model=TokenResponse)
@@ -83,6 +81,11 @@ def logout(body: TokenRefreshRequest, db: Session = Depends(get_db), current_use
     crud_token.revoke_refresh_token_by_jti(db, jti)
     return {"msg": "logout OK"}
 
+#pruebas
+#@router.get("/me", response_model=UserOut)
+#def read_users_me(current_user: UserOut = Depends(get_current_active_user)):
+#    return current_user
+
 @router.get("/me", response_model=UserOut)
-def read_users_me(current_user: UserOut = Depends(get_current_active_user)):
+def read_users_me(current_user: User = Depends(get_current_active_user)):
     return current_user

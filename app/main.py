@@ -5,7 +5,8 @@ from app.core.config import settings
 from app.core.filesystem import ensure_upload_dirs_exist
 from app.api.v1 import auth, animals, admin_users, favorite_animals, surveys, trivia
 from fastapi.concurrency import run_in_threadpool
-
+#pagination
+from fastapi_pagination import add_pagination
 # app
 app = FastAPI(
     title="ZooConnect API",
@@ -41,3 +42,6 @@ async def startup_event():
 @app.on_event("shutdown")
 async def shutdown_event():
     print("ZooConnect API detenida")
+
+
+add_pagination(app)

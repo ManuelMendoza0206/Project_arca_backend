@@ -7,13 +7,17 @@ from app.crud import user as crud_user
 from app.schemas.user import UserOut, AdminUserCreate, AdminUserUpdate
 from app.core.dependencies import require_admin_user
 
+#pagination
+from fastapi_pagination import Page, paginate
+from app.schemas.user import UserOutWithRole 
+
 router = APIRouter(
     dependencies=[Depends(require_admin_user)]  
 )
 
-@router.get("/users", response_model=List[UserOut])
-def admin_list_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    return crud_user.get_users(db=db, skip=skip, limit=limit)
+@router.get("/users", response_model=Page[UserOutWithRole], dependencies=[Depends(require_admin_user)])
+def admin_list_users(db: Session = Depends(get_db)):
+    return paginate(crud_user.get_users_query(db=db))
 
 @router.get("/users/{user_id}", response_model=UserOut)
 def admin_get_user(user_id: int, db: Session = Depends(get_db)):

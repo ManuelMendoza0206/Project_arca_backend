@@ -55,3 +55,17 @@ class UserOut(BaseModel):
 
     class Config:
         from_attributes = True
+
+#pagination
+class UserOutWithRole(BaseModel):
+    id: int
+    email: EmailStr
+    username: str
+    is_active: bool
+    is_admin: bool
+    role_id: int
+    photo_url: Optional[str] = None 
+    created_at: datetime 
+
+    class Config:
+        from_attributes = True
