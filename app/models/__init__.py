@@ -4,3 +4,4 @@ from .animal import Animal, Especie, Habitat, MediaAnimal, MediaHabitat, AnimalF
 from .survey import Encuesta, EncuestaTema, PreguntaEncuesta, OpcionEncuesta, ParticipacionEncuesta, RespuestaUsuario
 from .refresh_token import RefreshToken
 from .trivia import Trivia, ParticipacionTrivia
+from .password_reset_token import PasswordResetToken

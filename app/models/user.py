@@ -34,6 +34,7 @@ class User(Base):
     trivias_creadas = relationship("Trivia", back_populates="usuario")
     participaciones_trivia = relationship("ParticipacionTrivia", back_populates="usuario")   
     animales_favoritos = relationship("AnimalFavorito", back_populates="usuario", cascade="all, delete-orphan")
+
     #Pruebas
     #propeidades hibridas
     @hybrid_property

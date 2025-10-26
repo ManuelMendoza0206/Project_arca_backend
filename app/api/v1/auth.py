@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from jose import jwt, JWTError
 
@@ -12,6 +12,13 @@ from app.crud.auth import authenticate_user
 from app.core.dependencies import get_current_active_user
 from app.core.config import settings
 from app.models.user import User
+#reset token
+from app.schemas.auth import ForgotPasswordRequest, ResetPasswordRequest
+from app.core import email_service
+from app.crud import token as crud_token
+#
+
+
 router = APIRouter()
 
 
@@ -89,3 +96,43 @@ def logout(body: TokenRefreshRequest, db: Session = Depends(get_db), current_use
 @router.get("/me", response_model=UserOut)
 def read_users_me(current_user: User = Depends(get_current_active_user)):
     return current_user
+
+#endpoints reset password
+@router.post("/forgot-password", status_code=status.HTTP_200_OK)
+async def forgot_password(
+    body: ForgotPasswordRequest,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db)
+):
+
+    user = crud_user.get_user_by_email(db, email=body.email)
+    
+    if user:
+
+        token = crud_token.create_password_reset_token(db, user_id=user.id)
+        
+        background_tasks.add_task(
+            email_service.send_password_reset_email,
+            email_to=user.email,
+            token=token,
+            username=user.username
+        )
+
+    return {"msg": "Se envio un enlace de recupracion"}
+
+
+@router.post("/reset-password", status_code=status.HTTP_200_OK)
+def reset_password(body: ResetPasswordRequest, db: Session = Depends(get_db)):
+    user = crud_token.get_user_by_reset_token(db, token=body.token)
+    
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="El token es invaslido o ha expirado"
+        )
+
+    crud_user.update_password(db, db_user=user, new_password=body.new_password)
+    
+    crud_token.delete_reset_token(db, token=body.token)
+    
+    return {"msg": "Contraseña actualizada exitosamente"}

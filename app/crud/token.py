@@ -1,7 +1,12 @@
 from sqlalchemy.orm import Session
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 from app.models.refresh_token import RefreshToken
+#reset token
+from app.models.password_reset_token import PasswordResetToken
+from app.core.config import settings
+from app.models.user import User
+import secrets
 
 def create_refresh_token_record(
     db: Session,
@@ -42,3 +47,41 @@ def is_refresh_token_valid(db: Session, jti: str) -> bool:
     if not token:
         return False
     return token.expires_at > datetime.now(timezone.utc)
+
+#funciones reset token
+def create_password_reset_token(db: Session, user_id: int) -> str:
+    """
+    Crea, guarda y devuelve un nuevo token de reseteo de contraseña
+    """
+    db.query(PasswordResetToken).filter(PasswordResetToken.user_id == user_id).delete()
+    token = secrets.token_urlsafe(32)
+    expires_at = datetime.now(timezone.utc) + timedelta(
+        minutes=settings.PASSWORD_RESET_TOKEN_EXPIRE_MINUTES
+    )
+    
+    db_token = PasswordResetToken(
+        user_id=user_id,
+        token=token,
+        expires_at=expires_at
+    )
+    
+    db.add(db_token)
+    db.commit()
+    
+    return token
+
+def get_user_by_reset_token(db: Session, token: str) -> User | None:
+    db_token = db.query(PasswordResetToken).filter(PasswordResetToken.token == token).first() 
+    if not db_token:
+        return None 
+        
+    if db_token.expires_at < datetime.now(timezone.utc):
+        db.delete(db_token) 
+        db.commit()
+        return None 
+        
+    return db.query(User).get(db_token.user_id)
+
+def delete_reset_token(db: Session, token: str) -> None:
+    db.query(PasswordResetToken).filter(PasswordResetToken.token == token).delete()
+    db.commit()

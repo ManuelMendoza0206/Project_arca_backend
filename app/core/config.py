@@ -1,6 +1,8 @@
 from pydantic_settings import BaseSettings
 from pydantic import AnyHttpUrl, field_validator
 from typing import List, Union
+#correo
+from pydantic import validator, EmailStr
 
 class Settings(BaseSettings):
     #heredando de basesettings indicamos que no sea un basenormal y que lea automaticamente las varibles de entorno
@@ -18,6 +20,19 @@ class Settings(BaseSettings):
     CLOUDINARY_CLOUD_NAME: str
     CLOUDINARY_API_KEY: str
     CLOUDINARY_API_SECRET: str
+    #
+    #correo
+    MAIL_USERNAME: EmailStr
+    MAIL_PASSWORD: str  
+    MAIL_FROM: EmailStr
+    MAIL_PORT: int = 587
+    MAIL_SERVER: str = "smtp.gmail.com"
+    MAIL_STARTTLS: bool = True
+    MAIL_SSL_TLS: bool = False
+    MAIL_FROM_NAME: str = "ZooConnect"
+
+    FRONTEND_RESET_PASSWORD_URL: AnyHttpUrl = "http://localhost:3000/reset-password" 
+    PASSWORD_RESET_TOKEN_EXPIRE_MINUTES: int = 30
     #
 
     @field_validator("CORS_ORIGINS", mode='before')
