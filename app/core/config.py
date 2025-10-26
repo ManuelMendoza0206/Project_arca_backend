@@ -10,7 +10,8 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_EXPIRE_DAYS: int = 30
     MEDIA_DIR: str = "./media"
     CORS_ORIGINS: List[AnyHttpUrl] | List[str] = ["http://localhost:3000"]
-    
+    DEFAULT_ADMIN_EMAIL: str
+    DEFAULT_ADMIN_PASSWORD: str
     #
     CLOUDINARY_CLOUD_NAME: str
     CLOUDINARY_API_KEY: str
