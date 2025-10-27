@@ -30,6 +30,8 @@ class Settings(BaseSettings):
     MAIL_STARTTLS: bool = True
     MAIL_SSL_TLS: bool = False
     MAIL_FROM_NAME: str = "ZooConnect"
+    #2fa
+    TOTP_ENCRYPTION_KEY: str
 
     FRONTEND_RESET_PASSWORD_URL: AnyHttpUrl = "http://localhost:3000/reset-password" 
     PASSWORD_RESET_TOKEN_EXPIRE_MINUTES: int = 30

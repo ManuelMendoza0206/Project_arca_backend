@@ -25,6 +25,10 @@ class User(Base):
     role_id = Column(Integer, ForeignKey("roles.id"), nullable=False)
     photo_url = Column(String(2048), nullable=True) #estandar
 
+    #2fa
+    is_totp_enabled = Column(Boolean, default=False, nullable=False)
+    totp_secret = Column(String(255), nullable=True)
+
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
 
@@ -35,6 +39,8 @@ class User(Base):
     participaciones_trivia = relationship("ParticipacionTrivia", back_populates="usuario")   
     animales_favoritos = relationship("AnimalFavorito", back_populates="usuario", cascade="all, delete-orphan")
 
+    #codigos usuario
+    backup_codes = relationship("TwoFactorCodes", back_populates="user", cascade="all, delete-orphan")
     #Pruebas
     #propeidades hibridas
     @hybrid_property

@@ -1,8 +1,8 @@
-"""Migracion inicial
+"""Todo de nuevo
 
-Revision ID: cf082f1047cb
-Revises: 6c019f5508ad
-Create Date: 2025-10-25 22:58:47.567438
+Revision ID: 92077e0675e8
+Revises: 
+Create Date: 2025-10-26 20:00:26.006286
 
 """
 from typing import Sequence, Union
@@ -12,8 +12,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = 'cf082f1047cb'
-down_revision: Union[str, Sequence[str], None] = '6c019f5508ad'
+revision: str = '92077e0675e8'
+down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
@@ -88,7 +88,9 @@ def upgrade() -> None:
     sa.Column('is_active', sa.Boolean(), nullable=False),
     sa.Column('email_verified', sa.Boolean(), nullable=False),
     sa.Column('role_id', sa.Integer(), nullable=False),
-    sa.Column('photo_url', sa.String(length=500), nullable=True),
+    sa.Column('photo_url', sa.String(length=2048), nullable=True),
+    sa.Column('is_totp_enabled', sa.Boolean(), nullable=False),
+    sa.Column('totp_secret', sa.String(length=255), nullable=True),
     sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.ForeignKeyConstraint(['role_id'], ['roles.id'], ),
@@ -137,6 +139,17 @@ def upgrade() -> None:
     sa.ForeignKeyConstraint(['animals_id_animal'], ['animals.id_animal'], ),
     sa.PrimaryKeyConstraint('id_media')
     )
+    op.create_table('password_reset_tokens',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('token', sa.String(length=100), nullable=False),
+    sa.Column('expires_at', sa.DateTime(timezone=True), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+    sa.Column('user_id', sa.Integer(), nullable=False),
+    sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_index(op.f('ix_password_reset_tokens_id'), 'password_reset_tokens', ['id'], unique=False)
+    op.create_index(op.f('ix_password_reset_tokens_token'), 'password_reset_tokens', ['token'], unique=True)
     op.create_table('refresh_tokens',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('user_id', sa.Integer(), nullable=False),
@@ -150,6 +163,16 @@ def upgrade() -> None:
     )
     op.create_index(op.f('ix_refresh_tokens_id'), 'refresh_tokens', ['id'], unique=False)
     op.create_index(op.f('ix_refresh_tokens_jti'), 'refresh_tokens', ['jti'], unique=True)
+    op.create_table('two_factor_codes',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('code_hash', sa.String(length=255), nullable=False),
+    sa.Column('is_used', sa.Boolean(), nullable=False),
+    sa.Column('user_id', sa.Integer(), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+    sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_index(op.f('ix_two_factor_codes_id'), 'two_factor_codes', ['id'], unique=False)
     op.create_table('PARTICIPACIONES_TRIVIA',
     sa.Column('Id_participacion_trivia', sa.Integer(), autoincrement=True, nullable=False),
     sa.Column('USUARIOS_Id_usuario', sa.Integer(), nullable=False),
@@ -217,9 +240,14 @@ def downgrade() -> None:
     op.drop_table('participaciones_encuesta')
     op.drop_table('encuesta_tema')
     op.drop_table('PARTICIPACIONES_TRIVIA')
+    op.drop_index(op.f('ix_two_factor_codes_id'), table_name='two_factor_codes')
+    op.drop_table('two_factor_codes')
     op.drop_index(op.f('ix_refresh_tokens_jti'), table_name='refresh_tokens')
     op.drop_index(op.f('ix_refresh_tokens_id'), table_name='refresh_tokens')
     op.drop_table('refresh_tokens')
+    op.drop_index(op.f('ix_password_reset_tokens_token'), table_name='password_reset_tokens')
+    op.drop_index(op.f('ix_password_reset_tokens_id'), table_name='password_reset_tokens')
+    op.drop_table('password_reset_tokens')
     op.drop_table('media_animal')
     op.drop_table('encuestas')
     op.drop_table('animalfavorito')

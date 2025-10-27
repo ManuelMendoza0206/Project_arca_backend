@@ -1,6 +1,8 @@
-from pydantic import BaseModel, EmailStr, validator
+from pydantic import BaseModel, EmailStr, Field, constr, validator
 #ret token
 import re
+#2fa
+from typing import Annotated, Union
 
 class LoginRequest(BaseModel):
     email: EmailStr
@@ -35,3 +37,14 @@ class ResetPasswordRequest(BaseModel):
         if not re.search(r"[0-9]", v):
             raise ValueError("La contraseña debe contener al menos un numero")
         return v
+    
+#2fa
+class LoginStep2Response(BaseModel):
+
+    step: str = "2fa_required"
+    session_token: str 
+
+TOTPCodem = Annotated[str, Field(..., strip_whitespace=True, min_length=6, max_length=6)]
+class TOTPLoginRequest(BaseModel):
+    session_token: str
+    code: TOTPCodem

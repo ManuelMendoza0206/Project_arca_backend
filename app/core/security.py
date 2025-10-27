@@ -40,3 +40,16 @@ def create_refresh_token(subject: str, expires_days: int | None = None, device_i
     return {"token": token, "jti": jti, "expires_at": expires, "device_info": device_info}
 #sistema actual stateless, el token se mantiene activo
 #implementacion de hibrido: Access Tokens Stateless y Refresh Tokens Stateful.
+
+#token 5 minutitos 2fa
+def create_2fa_session_token(subject: str) -> str:
+    now = datetime.now(timezone.utc)
+    expires = now + timedelta(minutes=5) 
+    
+    payload = {
+        "sub": str(subject),
+        "iat": now,
+        "exp": expires,
+        "type": "pre_2fa"
+    }
+    return jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)

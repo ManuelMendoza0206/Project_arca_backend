@@ -17,6 +17,17 @@ from app.schemas.auth import ForgotPasswordRequest, ResetPasswordRequest
 from app.core import email_service
 from app.crud import token as crud_token
 #
+#2fa
+from typing import Union
+from app.schemas.auth import (
+    LoginRequest, TokenResponse, TokenRefreshRequest,
+    LoginStep2Response, TOTPLoginRequest
+)
+from app.crud import two_factor as crud_2fa
+from app.core.security import (
+    create_access_token, create_refresh_token, create_2fa_session_token
+)
+from app.core.encryption import decrypt_data
 
 
 router = APIRouter()
@@ -44,7 +55,7 @@ def register(user_in: UserCreate, db: Session = Depends(get_db)):
     #    raise HTTPException(status_code=400, detail="Email ya registrado")
     return crud_user.create_public_user(db=db, user_in=user_in)
 
-@router.post("/login", response_model=TokenResponse)
+@router.post("/login", response_model=Union[TokenResponse, LoginStep2Response])
 def login(payload: LoginRequest, db: Session = Depends(get_db)):
     user = authenticate_user(db, payload.email, payload.password)
     if not user:
@@ -52,8 +63,57 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
     if not getattr(user, "is_active", True):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Usuario inactivo")
 
+    if user.is_totp_enabled:
+        session_token = create_2fa_session_token(subject=user.email)
+        return LoginStep2Response(session_token=session_token)
+
     access_token, refresh_token = _issue_tokens_for_user(user, db)
     return {"access_token": access_token, "refresh_token": refresh_token, "token_type": "bearer"}
+
+#2fA
+@router.post("/2fa/verify-login", response_model=TokenResponse)
+def verify_login_2fa(
+    body: TOTPLoginRequest,
+    db: Session = Depends(get_db)
+):
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Token de sesion 2FA invalido",
+    )
+    
+    # 1. Decodificar el token de sesion el cortito de 5 minutps
+    try:
+        payload = jwt.decode(body.session_token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        if payload.get("type") != "pre_2fa":
+            raise credentials_exception
+        email = payload.get("sub")
+        if not email:
+            raise credentials_exception
+    except JWTError:
+        raise credentials_exception
+
+    # 2. Obtener el usuario
+    user = crud_user.get_user_by_email(db, email)
+    if not user or not user.is_active or not user.is_totp_enabled:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Usuario no valido para 2FA")
+
+    # 3. Verificar codigo
+    is_code_valid = False
+    
+    if len(body.code) == 6:
+        try:
+            secret = decrypt_data(user.totp_secret)
+            is_code_valid = crud_2fa.verify_totp_code(secret, body.code)
+        except Exception:
+            is_code_valid = False
+    else:
+        is_code_valid = crud_2fa.validate_backup_code(db, user, body.code)
+
+    if not is_code_valid:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Codigo 2FA inválido")
+
+    access_token, refresh_token = _issue_tokens_for_user(user, db)
+    return TokenResponse(access_token=access_token, refresh_token=refresh_token, token_type="bearer")
 
 @router.post("/refresh", response_model=TokenResponse)
 def refresh_token(body: TokenRefreshRequest, db: Session = Depends(get_db)):
