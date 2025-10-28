@@ -1,4 +1,4 @@
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 from jose import jwt, JWTError
 
@@ -28,6 +28,8 @@ from app.core.security import (
     create_access_token, create_refresh_token, create_2fa_session_token
 )
 from app.core.encryption import decrypt_data
+#probando rate limitng
+from app.rate_limiting import limiter
 
 
 router = APIRouter()
@@ -55,8 +57,11 @@ def register(user_in: UserCreate, db: Session = Depends(get_db)):
     #    raise HTTPException(status_code=400, detail="Email ya registrado")
     return crud_user.create_public_user(db=db, user_in=user_in)
 
+
+#rate limiting
 @router.post("/login", response_model=Union[TokenResponse, LoginStep2Response])
-def login(payload: LoginRequest, db: Session = Depends(get_db)):
+@limiter.limit("2/minute")
+def login(request: Request, payload: LoginRequest, db: Session = Depends(get_db)):
     user = authenticate_user(db, payload.email, payload.password)
     if not user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Credenciales invalidas")
