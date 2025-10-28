@@ -1,13 +1,11 @@
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, status, Response, Cookie
 from sqlalchemy.orm import Session
 from jose import jwt, JWTError
 
 from app.db.session import get_db
 from app.schemas.user import UserCreate, UserOut, UserUpdateProfile
-from app.schemas.auth import LoginRequest, TokenResponse, TokenRefreshRequest
 from app.crud import user as crud_user
 from app.crud import token as crud_token
-from app.core.security import create_access_token, create_refresh_token
 from app.crud.auth import authenticate_user
 from app.core.dependencies import get_current_active_user
 from app.core.config import settings
@@ -18,9 +16,9 @@ from app.core import email_service
 from app.crud import token as crud_token
 #
 #2fa
-from typing import Union
+from typing import Optional, Union
 from app.schemas.auth import (
-    LoginRequest, TokenResponse, TokenRefreshRequest,
+    LoginRequest, TokenResponse,
     LoginStep2Response, TOTPLoginRequest
 )
 from app.crud import two_factor as crud_2fa
@@ -30,7 +28,8 @@ from app.core.security import (
 from app.core.encryption import decrypt_data
 #probando rate limitng
 from app.rate_limiting import limiter
-
+#cookies
+from app.crud.auth import set_refresh_cookie, clear_refresh_cookie
 
 router = APIRouter()
 
@@ -61,7 +60,12 @@ def register(user_in: UserCreate, db: Session = Depends(get_db)):
 #rate limiting
 @router.post("/login", response_model=Union[TokenResponse, LoginStep2Response])
 @limiter.limit("2/minute")
-def login(request: Request, payload: LoginRequest, db: Session = Depends(get_db)):
+def login(
+    request: Request,
+    #prueba
+    response:Response,
+    #
+    payload: LoginRequest, db: Session = Depends(get_db)):
     user = authenticate_user(db, payload.email, payload.password)
     if not user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Credenciales invalidas")
@@ -73,12 +77,17 @@ def login(request: Request, payload: LoginRequest, db: Session = Depends(get_db)
         return LoginStep2Response(session_token=session_token)
 
     access_token, refresh_token = _issue_tokens_for_user(user, db)
-    return {"access_token": access_token, "refresh_token": refresh_token, "token_type": "bearer"}
+    #
+    set_refresh_cookie(response, refresh_token)
+    #return {"access_token": access_token, "refresh_token": refresh_token, "token_type": "bearer"}
+    return TokenResponse(access_token=access_token, token_type="bearer")
 
 #2fA
 @router.post("/2fa/verify-login", response_model=TokenResponse)
 def verify_login_2fa(
     body: TOTPLoginRequest,
+    #
+    response:Response,
     db: Session = Depends(get_db)
 ):
     credentials_exception = HTTPException(
@@ -118,8 +127,12 @@ def verify_login_2fa(
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Codigo 2FA inválido")
 
     access_token, refresh_token = _issue_tokens_for_user(user, db)
-    return TokenResponse(access_token=access_token, refresh_token=refresh_token, token_type="bearer")
+    #
+    set_refresh_cookie(response, refresh_token)
 
+    #return TokenResponse(access_token=access_token, refresh_token=refresh_token, token_type="bearer")
+    return TokenResponse(access_token=access_token, token_type="bearer")
+""""
 @router.post("/refresh", response_model=TokenResponse)
 def refresh_token(body: TokenRefreshRequest, db: Session = Depends(get_db)):
     try:
@@ -141,7 +154,21 @@ def refresh_token(body: TokenRefreshRequest, db: Session = Depends(get_db)):
 
     access_token, refresh_token = _issue_tokens_for_user(user, db)
     return {"access_token": access_token, "refresh_token": refresh_token, "token_type": "bearer"}
-
+"""
+@router.post("/logout")
+def logout( response: Response, refresh_token: Optional[str] = Cookie(None), db: Session = Depends(get_db), current_user=Depends(get_current_active_user)
+):
+    if refresh_token:
+        try:
+            decoded = jwt.decode(refresh_token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+            jti = decoded.get("jti")
+            if jti:
+                crud_token.revoke_refresh_token_by_jti(db, jti)
+        except JWTError:
+            pass
+    clear_refresh_cookie(response)
+    return {"msg": "logout OK"}
+""""
 @router.post("/logout")
 def logout(body: TokenRefreshRequest, db: Session = Depends(get_db), current_user=Depends(get_current_active_user)):
     try:
@@ -152,11 +179,22 @@ def logout(body: TokenRefreshRequest, db: Session = Depends(get_db), current_use
 
     crud_token.revoke_refresh_token_by_jti(db, jti)
     return {"msg": "logout OK"}
+"""
+@router.post("/logout")
+def logout(response: Response, db: Session = Depends(get_db), refresh_token: Optional[str] = Cookie(None), current_user: User = Depends(get_current_active_user)
+):
+    if refresh_token:
+        try:
+            decoded = jwt.decode(refresh_token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+            jti = decoded.get("jti")
+            if jti:
+                crud_token.revoke_refresh_token_by_jti(db, jti)
+        except JWTError:
+            pass
+    clear_refresh_cookie(response)
+    
+    return {"msg": "logout OK"}
 
-#pruebas
-#@router.get("/me", response_model=UserOut)
-#def read_users_me(current_user: UserOut = Depends(get_current_active_user)):
-#    return current_user
 
 @router.get("/me", response_model=UserOut)
 def read_users_me(current_user: User = Depends(get_current_active_user)):

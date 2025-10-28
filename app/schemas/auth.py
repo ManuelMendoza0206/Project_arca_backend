@@ -7,18 +7,18 @@ from typing import Annotated, Union
 class LoginRequest(BaseModel):
     email: EmailStr
     password: str
-
-class TokenRefreshRequest(BaseModel):
-    refresh_token: str
+#cambios refresh token jesus
+#class TokenRefreshRequest(BaseModel):
+#    refresh_token: str
 
 class TokenResponse(BaseModel):
     access_token: str
-    refresh_token: str
+    #refresh_token: str
     token_type: str = "bearer"
-    expires_in: int | None = None
+    #expires_in: int | None = None
 
-    class Config:
-        from_attributes = True
+    #class Config:
+    #    from_attributes = True
 
 
 class ForgotPasswordRequest(BaseModel):
