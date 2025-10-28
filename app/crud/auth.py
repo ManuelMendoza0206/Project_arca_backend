@@ -24,8 +24,8 @@ def set_refresh_cookie(response: Response, token: str):
         value=token,
         httponly=True,
         secure=True,
-        samesite="strict",
-        path="/api/v1/auth",
+        samesite="none",
+        path="/zooconnect/",
         max_age=expires_seconds
     )
 
