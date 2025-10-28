@@ -155,19 +155,36 @@ def refresh_token(body: TokenRefreshRequest, db: Session = Depends(get_db)):
     access_token, refresh_token = _issue_tokens_for_user(user, db)
     return {"access_token": access_token, "refresh_token": refresh_token, "token_type": "bearer"}
 """
-@router.post("/logout")
-def logout( response: Response, refresh_token: Optional[str] = Cookie(None), db: Session = Depends(get_db), current_user=Depends(get_current_active_user)
+@router.post("/refresh", response_model=TokenResponse)
+def refresh_token(
+    response: Response,
+    refresh_token: Optional[str] = Cookie(None), 
+    db: Session = Depends(get_db)
 ):
-    if refresh_token:
-        try:
-            decoded = jwt.decode(refresh_token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
-            jti = decoded.get("jti")
-            if jti:
-                crud_token.revoke_refresh_token_by_jti(db, jti)
-        except JWTError:
-            pass
-    clear_refresh_cookie(response)
-    return {"msg": "logout OK"}
+    if refresh_token is None:
+        raise HTTPException(status_code=401, detail="No se encontro refresh token")
+
+    try:
+        decoded = jwt.decode(refresh_token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        if decoded.get("type") != "refresh":
+            raise HTTPException(status_code=400, detail="Token invalido")
+        jti, sub = decoded.get("jti"), decoded.get("sub")
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Refresh token invalido")
+
+    if not crud_token.is_refresh_token_valid(db, jti):
+        raise HTTPException(status_code=401, detail="Refresh token inalido")
+
+    crud_token.revoke_refresh_token_by_jti(db, jti)
+    user = crud_user.get_user_by_email(db, sub)
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+
+    new_access_token, new_refresh_token = _issue_tokens_for_user(user, db)
+    set_refresh_cookie(response, new_refresh_token)
+    
+    return TokenResponse(access_token=new_access_token, token_type="bearer")
+
 """"
 @router.post("/logout")
 def logout(body: TokenRefreshRequest, db: Session = Depends(get_db), current_user=Depends(get_current_active_user)):
