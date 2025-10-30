@@ -32,7 +32,15 @@ class Settings(BaseSettings):
     MAIL_FROM_NAME: str = "ZooConnect"
     #2fa
     TOTP_ENCRYPTION_KEY: str
-
+    #redis
+    REDIS_HOST: str = "localhost"
+    REDIS_PORT: int = 6379
+    REDIS_DB: int = 0
+    
+    @property
+    def REDIS_URL(self) -> str:
+        return f"redis://{self.REDIS_HOST}:{self.REDIS_PORT}/{self.REDIS_DB}"
+    #
     FRONTEND_RESET_PASSWORD_URL: AnyHttpUrl = "http://localhost:3000/reset-password" 
     PASSWORD_RESET_TOKEN_EXPIRE_MINUTES: int = 30
     #

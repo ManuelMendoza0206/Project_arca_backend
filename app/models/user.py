@@ -28,7 +28,9 @@ class User(Base):
     #2fa
     is_totp_enabled = Column(Boolean, default=False, nullable=False)
     totp_secret = Column(String(255), nullable=True)
-
+    #redis
+    locked_until = Column(DateTime(timezone=True), nullable=True)
+    
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
 
@@ -37,8 +39,8 @@ class User(Base):
     participaciones_encuestas = relationship("ParticipacionEncuesta", back_populates="usuario")
     trivias_creadas = relationship("Trivia", back_populates="usuario")
     participaciones_trivia = relationship("ParticipacionTrivia", back_populates="usuario")   
-    animales_favoritos = relationship("AnimalFavorito", back_populates="usuario", cascade="all, delete-orphan")
-
+    favorited_by_users = relationship("AnimalFavorito", back_populates="usuario", cascade="all, delete-orphan")
+    
     #codigos usuario
     backup_codes = relationship("TwoFactorCodes", back_populates="user", cascade="all, delete-orphan")
     #Pruebas

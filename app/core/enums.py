@@ -12,3 +12,8 @@ class AnimalState(str, Enum):
     EN_CUARENTENA = "En cuarentena"
     TRASLADADO = "Trasladado"
     FALLECIDO = "Fallecido"
+
+class AuditEvent(str, Enum):
+    LOGIN_SUCCESS = "login_exitoso"
+    LOGIN_FAILURE = "login_fallido"
+    V2P_SUCCESS = "login_2fa_exitoso"

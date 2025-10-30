@@ -23,14 +23,20 @@ from app.schemas.auth import (
 )
 from app.crud import two_factor as crud_2fa
 from app.core.security import (
-    create_access_token, create_refresh_token, create_2fa_session_token
+    create_access_token, create_refresh_token, create_2fa_session_token, settings
 )
 from app.core.encryption import decrypt_data
 #probando rate limitng
 from app.rate_limiting import limiter
 #cookies
 from app.crud.auth import set_refresh_cookie, clear_refresh_cookie
-
+#redis
+from redis.asyncio import Redis
+from app.db.cache import get_cache_client
+from app.crud import audit as crud_audit
+from app.core import policia
+from app.core.enums import AuditEvent
+from app.core.security import verify_password
 router = APIRouter()
 
 
@@ -59,22 +65,80 @@ def register(user_in: UserCreate, db: Session = Depends(get_db)):
 
 #rate limiting
 @router.post("/login", response_model=Union[TokenResponse, LoginStep2Response])
-@limiter.limit("2/minute")
-def login(
+@limiter.limit("10/minute")
+async def login(
     request: Request,
-    #prueba
-    response:Response,
+    #prueba redis
+    background_tasks: BackgroundTasks,
+    
     #
-    payload: LoginRequest, db: Session = Depends(get_db)):
-    user = authenticate_user(db, payload.email, payload.password)
-    if not user:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Credenciales invalidas")
-    if not getattr(user, "is_active", True):
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Usuario inactivo")
+    response:Response,
+    payload: LoginRequest, 
+    db: Session = Depends(get_db),
 
+    cache: Redis = Depends(get_cache_client)):
+    #paso 1
+    user = crud_user.get_user_by_email(db, payload.email)
+    #paso 2 manejar el usuario no encontrado
+    if not user:
+        background_tasks.add_task(
+            crud_audit.create_audit_log, 
+            db, 
+            event=AuditEvent.LOGIN_FAILURE, 
+            attempted_email=payload.email
+        )
+        #Incrementamos nuestro contador
+        await policia.increment_login_failure(payload.email, cache)
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, 
+            detail="Credenciales invalidas"
+        )
+    
+    #el usuario existe ahora verificamos si no esta blqoueado
+    if policia.is_account_locked(user):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Cuenta bloqueada temporalmente, intente mas tarde"
+        )
+    #el usuario existe ya aparte no esta bloqueado, vemos la contraseña
+    if not verify_password(payload.password, user.hashed_password):
+            # Contraseña incorrecta.
+            background_tasks.add_task(
+                crud_audit.create_audit_log,
+                db,
+                event=AuditEvent.LOGIN_FAILURE,
+                user_id=user.id,
+                attempted_email=user.email
+            )
+            
+            await policia.increment_login_failure(user.email, cache)
+            
+            failures = await policia.get_login_failures(user.email, cache)
+            if failures >= policia.MAX_FAILED_ATTEMPTS:
+                policia.lock_account(db, user)
+                await policia.clear_login_failures(user.email, cache)
+
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Credenciales invalidas"
+            )
+    #contraseña correcta vemos si esta activo
+    if not user.is_active:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Usuario inactivo")
+    #limpiadmor contadores redis
+    await policia.clear_login_failures(user.email, cache)
+    #comprobamos 2fa
     if user.is_totp_enabled:
         session_token = create_2fa_session_token(subject=user.email)
         return LoginStep2Response(session_token=session_token)
+    #login exitoso
+    background_tasks.add_task(
+        crud_audit.create_audit_log, 
+        db, 
+        event=AuditEvent.LOGIN_SUCCESS, 
+        user_id=user.id, 
+        attempted_email=user.email
+    )
 
     access_token, refresh_token = _issue_tokens_for_user(user, db)
     #
@@ -84,18 +148,20 @@ def login(
 
 #2fA
 @router.post("/2fa/verify-login", response_model=TokenResponse)
-def verify_login_2fa(
+async def verify_login_2fa(
     body: TOTPLoginRequest,
-    #
-    response:Response,
-    db: Session = Depends(get_db)
+    response: Response,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+    cache: Redis = Depends(get_cache_client)
 ):
+    #verficamos token y codigo 2fa
+
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Token de sesion 2FA invalido",
     )
     
-    # 1. Decodificar el token de sesion el cortito de 5 minutps
     try:
         payload = jwt.decode(body.session_token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         if payload.get("type") != "pre_2fa":
@@ -109,9 +175,9 @@ def verify_login_2fa(
     # 2. Obtener el usuario
     user = crud_user.get_user_by_email(db, email)
     if not user or not user.is_active or not user.is_totp_enabled:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Usuario no valido para 2FA")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Usuario no válido para 2FA")
 
-    # 3. Verificar codigo
+    # 3. Verificar el codigo
     is_code_valid = False
     
     if len(body.code) == 6:
@@ -121,16 +187,35 @@ def verify_login_2fa(
         except Exception:
             is_code_valid = False
     else:
+
         is_code_valid = crud_2fa.validate_backup_code(db, user, body.code)
 
     if not is_code_valid:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Codigo 2FA inválido")
 
+        background_tasks.add_task(
+            crud_audit.create_audit_log,
+            db,
+            event=AuditEvent.LOGIN_FAILURE,
+            user_id=user.id,
+            attempted_email=user.email
+        )
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Codigo 2fa invalido")
+
+
+    background_tasks.add_task(
+        crud_audit.create_audit_log,
+        db,
+        event=AuditEvent.V2P_SUCCESS,
+        user_id=user.id,
+        attempted_email=user.email
+    )
+    
+
+    await policia.clear_login_failures(user.email, cache)
+    
     access_token, refresh_token = _issue_tokens_for_user(user, db)
-    #
     set_refresh_cookie(response, refresh_token)
-
-    #return TokenResponse(access_token=access_token, refresh_token=refresh_token, token_type="bearer")
+    
     return TokenResponse(access_token=access_token, token_type="bearer")
 """"
 @router.post("/refresh", response_model=TokenResponse)
