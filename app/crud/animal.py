@@ -227,7 +227,7 @@ def delete_media_habitat(db: Session, media_id: int) -> Optional[MediaHabitat]:
     return db_media
 
 def get_media_by_habitat_id(db: Session, habitat_id: int) -> Query:
-    return db.query(MediaHabitat).filter(MediaHabitat.habitat_id == habitat_id).all()
+    return db.query(MediaHabitat).filter(MediaHabitat.habitat_id == habitat_id)
 
 def get_all_media_habitats(db: Session) -> Query:
     return db.query(MediaHabitat)
