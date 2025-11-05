@@ -1,49 +1,61 @@
-
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 from typing import Optional, List
 from datetime import date, datetime
 from app.core.enums import AnimalState
 
 
-class MediaBase(BaseModel):
+class MediaBaseAnimal(BaseModel):
     tipo_medio: bool
-    url: str = Field(..., max_length=200)
-    titulo: str = Field(..., max_length=150)
-    descripcion: Optional[str] = None
+    url_animal: str = Field(..., max_length=2048)
+    titulo_media_animal: str = Field(..., max_length=150)
+    descripcion_media_animal: Optional[str] = None
 
-class MediaCreate(MediaBase):
+class MediaCreateAnimal(MediaBaseAnimal):
     pass
 
-class MediaOut(MediaBase):
-    id_media: int
+class MediaOutAnimal(MediaBaseAnimal):
+    id_media_animal: int
     public_id: Optional[str] = None
-    tipo_medio: str
+    class Config:
+        from_attributes = True
+
+class MediaBaseHabitat(BaseModel):
+    tipo_medio: bool
+    url_habitat: str = Field(..., max_length=2048)
+    titulo_media_habitat: str = Field(..., max_length=150)
+    descripcion_media_habitat: Optional[str] = None
+
+class MediaCreateHabitat(MediaBaseHabitat):
+    pass
+
+class MediaOutHabitat(MediaBaseHabitat):
+    id_media_habitat: int
+    public_id: Optional[str] = None
     class Config:
         from_attributes = True
 
 
 class EspecieBase(BaseModel):
     nombre_cientifico: str = Field(..., max_length=100)
-    nombre: str = Field(..., max_length=100)
+    nombre_especie: str = Field(..., max_length=100)
     filo: str = Field(..., max_length=100)
     clase: str = Field(..., max_length=100)
     orden: str = Field(..., max_length=100)
     familia: str = Field(..., max_length=100)
-    genero: str = Field(..., max_length=100)
-    descripcion: str
+    descripcion_especie: str
 
 class EspecieCreate(EspecieBase):
     pass
 
 class EspecieUpdate(BaseModel):
     nombre_cientifico: Optional[str] = Field(None, max_length=100)
-    nombre: Optional[str] = Field(None, max_length=100)
+    nombre_especie: Optional[str] = Field(None, max_length=100)
     filo: Optional[str] = Field(None, max_length=100)
     clase: Optional[str] = Field(None, max_length=100)
     orden: Optional[str] = Field(None, max_length=100)
     familia: Optional[str] = Field(None, max_length=100)
-    genero: Optional[str] = Field(None, max_length=100)
-    descripcion: Optional[str] = None
+    descripcion_especie: Optional[str] = None
+    is_active: bool
 
 class EspecieOut(EspecieBase):
     id_especie: int
@@ -55,8 +67,8 @@ class EspecieOut(EspecieBase):
 
 class HabitatBase(BaseModel):
     nombre_habitat: str = Field(..., max_length=50)
-    tipo: str = Field(..., max_length=80)
-    descripcion: str
+    tipo_habitat: str = Field(..., max_length=80)
+    descripcion_habitat: str
     condiciones_climaticas: str = Field(..., max_length=200)
 
 class HabitatCreate(HabitatBase):
@@ -64,9 +76,10 @@ class HabitatCreate(HabitatBase):
 
 class HabitatUpdate(BaseModel):
     nombre_habitat: Optional[str] = Field(None, max_length=50)
-    tipo: Optional[str] = Field(None, max_length=80)
-    descripcion: Optional[str] = None
+    tipo_habitat: Optional[str] = Field(None, max_length=80)
+    descripcion_habitat: Optional[str] = None
     condiciones_climaticas: Optional[str] = Field(None, max_length=200)
+    is_active: bool
 
 class HabitatOut(HabitatBase):
     id_habitat: int
@@ -77,11 +90,11 @@ class HabitatOut(HabitatBase):
 
 
 class AnimalBase(BaseModel):
-    nombre: str = Field(..., max_length=100)
+    nombre_animal: str = Field(..., max_length=100)
     genero: bool
     fecha_nacimiento: Optional[date] = None
     fecha_ingreso: Optional[date] = None
-    procedencia: str = Field(..., max_length=300)
+    procedencia_animal: str = Field(..., max_length=300)
     estado_operativo: AnimalState
     es_publico: bool = True
     descripcion: str
@@ -89,13 +102,20 @@ class AnimalBase(BaseModel):
 class AnimalCreate(AnimalBase):
     especie_id: int
     habitat_id: int
+    #prueba
+    @model_validator(mode='after')
+    def check_dates(self) -> 'AnimalCreate':
+        if self.fecha_nacimiento and self.fecha_ingreso:
+            if self.fecha_ingreso < self.fecha_nacimiento:
+                raise ValueError("La fecha de ingreso no puede ser anterior a la fecha de nacimiento")
+        return self
 
 class AnimalUpdate(BaseModel):
-    nombre: Optional[str] = Field(None, max_length=100)
+    nombre_animal: Optional[str] = Field(None, max_length=100)
     genero: Optional[bool] = None
     fecha_nacimiento: Optional[date] = None
     fecha_ingreso: Optional[date] = None
-    procedencia: Optional[str] = Field(None, max_length=300)
+    procedencia_animal: Optional[str] = Field(None, max_length=300)
     estado_operativo: Optional[AnimalState] = None
     es_publico: Optional[bool] = None
     descripcion: Optional[str] = None
@@ -106,8 +126,9 @@ class AnimalOut(AnimalBase):
     id_animal: int
     especie: EspecieOut
     habitat: HabitatOut
-    media: List[MediaOut] = []
-
+    media: List[MediaOutAnimal] = []
+    age: Optional[int]
+    #is_active : bool
     class Config:
         from_attributes = True
 

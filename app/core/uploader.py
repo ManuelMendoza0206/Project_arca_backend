@@ -12,9 +12,9 @@ def configure_cloudinary():
         api_secret=settings.CLOUDINARY_API_SECRET,
         secure=True
     )
+configure_cloudinary()
 
 def upload_to_cloudinary(file: UploadFile, folder: str) -> Dict:
-    configure_cloudinary()
     try:
         upload_result = cloudinary.uploader.upload(
             file.file,
@@ -30,8 +30,6 @@ def upload_to_cloudinary(file: UploadFile, folder: str) -> Dict:
         )
 
 def delete_from_cloudinary(public_id: str):
-
-    configure_cloudinary()
     try:
         cloudinary.uploader.destroy(public_id)
     except Exception as e:

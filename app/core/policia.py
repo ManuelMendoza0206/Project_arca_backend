@@ -2,6 +2,7 @@ from sqlalchemy.orm import Session
 from redis.asyncio import Redis
 from datetime import datetime, timedelta, timezone
 
+from app.db.session import SessionLocal
 from app.models.user import User
 from app.db.cache import get_cache_client
 from fastapi import Depends
@@ -72,15 +73,24 @@ async def clear_login_failures(
     await cache.delete(key)
 
 
-def lock_account(db: Session, user: User) -> None:
+def lock_account(user_id: int) -> None:
     """
     Escribe el bloqueo oficial
     """
-    lock_until_time = datetime.now(timezone.utc) + timedelta(minutes=LOCKOUT_DURATION_MINUTES)
-    
-    user.locked_until = lock_until_time
-    db.add(user)
-    db.commit()
+    db: Session = SessionLocal()
+    try:
+        user = db.query(User).get(user_id)
+        if user:
+            lock_until_time = datetime.now(timezone.utc) + timedelta(minutes=LOCKOUT_DURATION_MINUTES)
+            
+            user.locked_until = lock_until_time
+            db.add(user)
+            db.commit()
+    except Exception as e:
+        print(f"ERROR EN BACKGROUND TASK (lock_account): {e}")
+        db.rollback()
+    finally:
+        db.close()
 
 
 def is_account_locked(user: User) -> bool:

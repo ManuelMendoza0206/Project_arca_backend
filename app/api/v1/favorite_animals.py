@@ -8,14 +8,13 @@ from app.crud import animal as crud_animal
 from app.schemas.animal import AnimalFavoritoCreate, AnimalFavoritoOut
 from app.models.user import User
 
+from fastapi_pagination import Page
+from fastapi_pagination.ext.sqlalchemy import paginate
+
 router = APIRouter()
 
 @router.post("/favorites/", response_model=AnimalFavoritoOut, status_code=status.HTTP_201_CREATED, tags=["Usuario - Favoritos"])
-def add_favorite(
-    favorite_in: AnimalFavoritoCreate,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
-):
+def add_favorite(favorite_in: AnimalFavoritoCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
     try:
         return crud_animal.add_animal_to_favorites(
             db, user_id=current_user.id, favorite_in=favorite_in
@@ -24,11 +23,7 @@ def add_favorite(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 @router.delete("/favorites/{animal_id}", status_code=status.HTTP_204_NO_CONTENT, tags=["Usuario - Favoritos"])
-def remove_favorite(
-    animal_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
-):
+def remove_favorite(animal_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
     success = crud_animal.remove_animal_from_favorites(
         db, user_id=current_user.id, animal_id=animal_id
     )
@@ -40,8 +35,5 @@ def remove_favorite(
     return None
 
 @router.get("/favorites/", response_model=List[AnimalFavoritoOut], tags=["Usuario - Favoritos"])
-def list_my_favorites(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
-):
-    return crud_animal.list_user_favorites(db, user_id=current_user.id)
+def list_my_favorites( db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user) ):
+    return paginate(crud_animal.list_user_favorites(db, user_id=current_user.id))

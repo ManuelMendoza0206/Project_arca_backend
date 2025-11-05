@@ -44,7 +44,7 @@ class LoginStep2Response(BaseModel):
     step: str = "2fa_required"
     session_token: str 
 
-TOTPCodem = Annotated[str, Field(..., strip_whitespace=True, min_length=6, max_length=6)]
+TOTPCodem = Annotated[str, Field(..., strip_whitespace=True, min_length=6, max_length=10)]
 class TOTPLoginRequest(BaseModel):
     session_token: str
     code: TOTPCodem

@@ -1,11 +1,12 @@
+from fastapi import Query
 from sqlalchemy.orm import Session, joinedload
 from typing import Dict, List, Optional
 
 from app.models.animal import Especie, Habitat, Animal, AnimalFavorito
 from app.schemas.animal import EspecieCreate, EspecieUpdate, HabitatCreate, HabitatUpdate, AnimalCreate, AnimalUpdate, AnimalFavoritoCreate
 
-from app.models.animal import MediaAnimal
-from app.schemas.animal import MediaCreate
+from app.models.animal import MediaAnimal, MediaHabitat
+from app.schemas.animal import MediaCreateAnimal, MediaCreateHabitat
 # --- Especies ---
 
 def create_especie(db: Session, especie_in: EspecieCreate) -> Especie:
@@ -21,8 +22,11 @@ def get_especie(db: Session, especie_id: int) -> Optional[Especie]:
 def get_especie_by_nombre_cientifico(db: Session, nombre_cientifico: str) -> Optional[Especie]:
     return db.query(Especie).filter(Especie.nombre_cientifico == nombre_cientifico).first()
 
-def list_especies(db: Session, skip: int = 0, limit: int = 100) -> List[Especie]:
-    return db.query(Especie).filter(Especie.is_active == True).offset(skip).limit(limit).all()
+#def list_especies(db: Session, skip: int = 0, limit: int = 100) -> List[Especie]:
+#    return db.query(Especie).filter(Especie.is_active == True).offset(skip).limit(limit).all()
+def list_especies(db: Session) -> Query:
+    return db.query(Especie).filter(Especie.is_active == True)
+
 
 def update_especie(db: Session, especie: Especie, especie_in: EspecieUpdate) -> Especie:
     update_data = especie_in.model_dump(exclude_unset=True)
@@ -55,8 +59,10 @@ def get_habitat(db: Session, habitat_id: int) -> Optional[Habitat]:
 def get_habitat_by_nombre(db: Session, nombre: str) -> Optional[Habitat]:
     return db.query(Habitat).filter(Habitat.nombre_habitat == nombre).first()
     
-def list_habitats(db: Session, skip: int = 0, limit: int = 100) -> List[Habitat]:
-    return db.query(Habitat).filter(Habitat.is_active == True).offset(skip).limit(limit).all()
+#def list_habitats(db: Session, skip: int = 0, limit: int = 100) -> List[Habitat]:
+#    return db.query(Habitat).filter(Habitat.is_active == True).offset(skip).limit(limit).all()
+def list_habitats(db: Session) -> Query:
+    return db.query(Habitat).filter(Habitat.is_active == True)
 
 def update_habitat(db: Session, habitat: Habitat, habitat_in: HabitatUpdate) -> Habitat:
     update_data = habitat_in.model_dump(exclude_unset=True)
@@ -94,17 +100,28 @@ def get_animal(db: Session, animal_id: int) -> Optional[Animal]:
     return (
         db.query(Animal)
         .options(joinedload(Animal.especie), joinedload(Animal.habitat))
-        .filter(Animal.id_animal == animal_id)
+        .filter(Animal.id_animal == animal_id, Animal.is_active == True)
         .first()
     )
-
+"""
 def list_animals(db: Session, es_publico: Optional[bool] = None, skip: int = 0, limit: int = 100) -> List[Animal]:
 
-    query = db.query(Animal).options(joinedload(Animal.especie), joinedload(Animal.habitat))
+    query = db.query(Animal).options(joinedload(Animal.especie), joinedload(Animal.habitat)).filter(Animal.is_active == True)
     if es_publico is not None:
         query = query.filter(Animal.es_publico == es_publico)
     
     return query.offset(skip).limit(limit).all()
+"""
+def list_animals(db: Session, es_publico: Optional[bool] = None) -> Query:
+    query = db.query(Animal).options(
+        joinedload(Animal.especie), 
+        joinedload(Animal.habitat)
+    ).filter(Animal.is_active == True)
+
+    if es_publico is not None:
+        query = query.filter(Animal.es_publico == es_publico)
+    
+    return query
 
 def update_animal(db: Session, animal: Animal, animal_in: AnimalUpdate) -> Animal:
     update_data = animal_in.model_dump(exclude_unset=True)
@@ -129,43 +146,91 @@ def update_animal(db: Session, animal: Animal, animal_in: AnimalUpdate) -> Anima
 def delete_animal(db: Session, animal_id: int) -> Optional[Animal]:
     db_animal = get_animal(db, animal_id)
     if db_animal:
-        db.delete(db_animal)
+        db_animal.is_active = False
         db.commit()
+        db.refresh(db_animal)
     return db_animal
 
 # --- Media de Animales ---
 
-def add_media_to_animal(db: Session, animal_id: int, media_data: Dict) -> MediaAnimal:
+def add_media_to_animal(
+    db: Session,
+    animal_id: int,
+    media_in: MediaCreateAnimal,  # schemas
+    upload_result: Dict
+) -> MediaAnimal:
 
     db_media = MediaAnimal(
         animal_id=animal_id,
-        url=media_data.get("secure_url"),
-        public_id=media_data.get("public_id"), 
-        tipo_medio=media_data.get("resource_type"), 
-        titulo=media_data.get("titulo"),
-        descripcion=media_data.get("descripcion")
+        
+        tipo_medio=media_in.tipo_medio,
+        titulo_media_animal=media_in.titulo_media_animal,
+        descripcion_media_animal=media_in.descripcion_media_animal,
+        
+        # Datos del cloud
+        url_animal=upload_result.get("secure_url"),
+        public_id=upload_result.get("public_id")
     )
     db.add(db_media)
     db.commit()
     db.refresh(db_media)
     return db_media
     
-def get_media(db: Session, media_id: int) -> Optional[MediaAnimal]:
-    return db.query(MediaAnimal).filter(MediaAnimal.id_media == media_id).first()
+def get_media_animal(db: Session, media_id: int) -> Optional[MediaAnimal]:
+    return db.query(MediaAnimal).filter(MediaAnimal.id_media_animal == media_id).first()
     
-def delete_media(db: Session, media_id: int) -> Optional[MediaAnimal]:
-    db_media = get_media(db, media_id)
+def delete_media_animal(db: Session, media_id: int) -> Optional[MediaAnimal]:
+    db_media = get_media_animal(db, media_id)
     if db_media:
         db.delete(db_media)
         db.commit()
     return db_media
 
-def get_media_by_animal_id(db: Session, animal_id: int) -> List[MediaAnimal]:
-    return db.query(MediaAnimal).filter(MediaAnimal.animal_id == animal_id).all()
+def get_media_by_animal_id(db: Session, animal_id: int) -> Query:
+    return db.query(MediaAnimal).filter(MediaAnimal.animal_id == animal_id)
 
-def get_all_media(db: Session, skip: int = 0, limit: int = 100) -> List[MediaAnimal]:
-    return db.query(MediaAnimal).offset(skip).limit(limit).all()
+def get_all_media_animals(db: Session) -> Query:
+    return db.query(MediaAnimal)
 
+#media habitat
+def add_media_to_habitat(
+    db: Session, 
+    habitat_id: int, 
+    media_in: MediaCreateHabitat, 
+    upload_result: Dict
+) -> MediaHabitat:
+
+    db_media = MediaHabitat(
+        habitat_id=habitat_id,
+        
+        tipo_medio=media_in.tipo_medio,
+        titulo_media_habitat=media_in.titulo_media_habitat,
+        descripcion_media_habitat=media_in.descripcion_media_habitat,
+        
+        # Datos cloud
+        url_habitat=upload_result.get("secure_url"),
+        public_id=upload_result.get("public_id")
+    )
+    db.add(db_media)
+    db.commit()
+    db.refresh(db_media)
+    return db_media
+
+def get_media_habitat(db: Session, media_id: int) -> Optional[MediaHabitat]:
+    return db.query(MediaHabitat).filter(MediaHabitat.id_media_habitat == media_id).first()
+
+def delete_media_habitat(db: Session, media_id: int) -> Optional[MediaHabitat]:
+    db_media = get_media_habitat(db, media_id)
+    if db_media:
+        db.delete(db_media)
+        db.commit()
+    return db_media
+
+def get_media_by_habitat_id(db: Session, habitat_id: int) -> Query:
+    return db.query(MediaHabitat).filter(MediaHabitat.habitat_id == habitat_id).all()
+
+def get_all_media_habitats(db: Session) -> Query:
+    return db.query(MediaHabitat)
 
 # --- Animales Favoritos ---
 
@@ -200,10 +265,13 @@ def remove_animal_from_favorites(db: Session, user_id: int, animal_id: int) -> b
         return True
     return False
 
-def list_user_favorites(db: Session, user_id: int) -> List[AnimalFavorito]:
+def list_user_favorites(db: Session, user_id: int) -> Query:
     return (
         db.query(AnimalFavorito)
-        .options(joinedload(AnimalFavorito.animal).joinedload(Animal.especie)) 
+        .options(
+            joinedload(AnimalFavorito.animal).joinedload(Animal.especie),
+            joinedload(AnimalFavorito.animal).joinedload(Animal.habitat),
+            joinedload(AnimalFavorito.animal).joinedload(Animal.media)
+        )
         .filter(AnimalFavorito.usuario_id == user_id)
-        .all()
     )

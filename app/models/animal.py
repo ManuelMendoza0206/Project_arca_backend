@@ -1,6 +1,6 @@
 from datetime import date
 from sqlalchemy import (
-    Column, Integer, String, Text, Boolean, Date, DateTime, ForeignKey, Enum as SQLAlchemyEnum, UniqueConstraint
+    CheckConstraint, Column, Integer, String, Text, Boolean, Date, DateTime, ForeignKey, Enum as SQLAlchemyEnum, UniqueConstraint
 )
 from sqlalchemy.orm import relationship, validates
 from sqlalchemy.sql import func
@@ -20,9 +20,10 @@ class Especie(Base):
     clase = Column(String(100), nullable=False)
     orden = Column(String(100), nullable=False)
     familia = Column(String(100), nullable=False)
-    genero = Column(String(100), nullable=False)
     descripcion_especie = Column(Text, nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
 
     animales = relationship("Animal", back_populates="especie")
     @validates('nombre_especie', 'nombre_cientifico', 'filo', 'clase', 'orden', 'familia', 'genero')
@@ -30,6 +31,7 @@ class Especie(Base):
         if isinstance(value, str):
             return value.strip()
         return value
+
 
 
 class Habitat(Base):
@@ -41,12 +43,12 @@ class Habitat(Base):
     descripcion_habitat = Column(Text, nullable=False)
     condiciones_climaticas = Column(String(200), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
-    updated_at = Column(DateTime(timezone=True), onupdate=func.now(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
 
     animales = relationship("Animal", back_populates="habitat")
     media = relationship("MediaHabitat", back_populates="habitat", cascade="all, delete-orphan")
-    @validates('nombre_habaitat', 'tipo_habitat')
+    @validates('nombre_habitat', 'tipo_habitat')
     def normalize_text_fields(self, key, value):
         if isinstance(value, str):
             return value.strip()
@@ -69,6 +71,7 @@ class Animal(Base):
     descripcion = Column(Text, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+    is_active = Column(Boolean, default=True, nullable=False)
     
     especie = relationship("Especie", back_populates="animales")
     habitat = relationship("Habitat", back_populates="animales")
@@ -90,28 +93,35 @@ class Animal(Base):
         return func.floor(
             func.extract('epoch', (func.now() - cls.fecha_nacimiento)) / 31557600
         )
+    #PROBANDO COSITAS
+    #un CheckConstraint impone la regla a nivel de base de datos, haciéndola imposible de saltar
+    __table_args__ = (
+        CheckConstraint('fecha_ingreso >= fecha_nacimiento', name='_fecha_ingreso_no_antes_nacimiento'),
+    )
 
 
 class MediaAnimal(Base):
     __tablename__ = "media_animal"
 
-    id_media = Column("id_media", Integer, primary_key=True, autoincrement=True)
+    id_media_animal = Column(Integer, primary_key=True, autoincrement=True)
     animal_id = Column("animals_id_animal", Integer, ForeignKey("animals.id_animal"), nullable=False)
     tipo_medio = Column(Boolean, nullable=False)#1 imagen 0 video
     url_animal = Column(String(2048), nullable=False)
-    titulo = Column(String(150), nullable=False)
-    descripcion = Column(Text, nullable=True)
+    public_id = Column(String(100), nullable=True)
+    titulo_media_animal = Column(String(150), nullable=False)
+    descripcion_media_animal = Column(Text, nullable=True)
 
     animal = relationship("Animal", back_populates="media")
 
 class MediaHabitat(Base):
     __tablename__ = "media_habitats"
 
-    id_media_habitat = Column("id_media_habitat", Integer, primary_key=True, autoincrement=True)
+    id_media_habitat = Column(Integer, primary_key=True, autoincrement=True)
     habitat_id = Column("habitats_id_habitat", Integer, ForeignKey("habitats.id_habitat"), nullable=False)
     url_habitat = Column(String(2048), nullable=False)
-    titulo = Column(String(150), nullable=False)
-    descripcion = Column(Text, nullable=True)
+    public_id = Column(String(100), nullable=True)
+    titulo_media_habitat = Column(String(150), nullable=False)
+    descripcion_media_habitat = Column(Text, nullable=True)
     tipo_medio = Column(Boolean, nullable=False)#1 imagen 0 video
     habitat = relationship("Habitat", back_populates="media")
 
@@ -121,6 +131,7 @@ class AnimalFavorito(Base):
     id_animal_favorito = Column("id_animal_favorito", Integer, primary_key=True, autoincrement=True)
     fecha_guardado = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     usuario_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    
     animal_id = Column(Integer, ForeignKey("animals.id_animal"), nullable=False)
 
     usuario = relationship("User", back_populates="favorited_by_users")

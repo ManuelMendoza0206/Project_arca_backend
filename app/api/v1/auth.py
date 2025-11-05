@@ -83,7 +83,7 @@ async def login(
     if not user:
         background_tasks.add_task(
             crud_audit.create_audit_log, 
-            db, 
+            #db, 
             event=AuditEvent.LOGIN_FAILURE, 
             attempted_email=payload.email
         )
@@ -105,7 +105,7 @@ async def login(
             # Contraseña incorrecta.
             background_tasks.add_task(
                 crud_audit.create_audit_log,
-                db,
+                #db,
                 event=AuditEvent.LOGIN_FAILURE,
                 user_id=user.id,
                 attempted_email=user.email
@@ -115,7 +115,7 @@ async def login(
             
             failures = await policia.get_login_failures(user.email, cache)
             if failures >= policia.MAX_FAILED_ATTEMPTS:
-                policia.lock_account(db, user)
+                background_tasks.add_task(policia.lock_account, user_id=user.id)
                 await policia.clear_login_failures(user.email, cache)
 
             raise HTTPException(
@@ -134,7 +134,7 @@ async def login(
     #login exitoso
     background_tasks.add_task(
         crud_audit.create_audit_log, 
-        db, 
+        #db, 
         event=AuditEvent.LOGIN_SUCCESS, 
         user_id=user.id, 
         attempted_email=user.email
@@ -194,7 +194,7 @@ async def verify_login_2fa(
 
         background_tasks.add_task(
             crud_audit.create_audit_log,
-            db,
+            #db,
             event=AuditEvent.LOGIN_FAILURE,
             user_id=user.id,
             attempted_email=user.email
@@ -204,7 +204,7 @@ async def verify_login_2fa(
 
     background_tasks.add_task(
         crud_audit.create_audit_log,
-        db,
+        #db,
         event=AuditEvent.V2P_SUCCESS,
         user_id=user.id,
         attempted_email=user.email

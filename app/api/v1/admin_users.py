@@ -12,6 +12,10 @@ from fastapi_pagination import Page
 from app.schemas.user import UserOutWithRole 
 from fastapi_pagination.ext.sqlalchemy import paginate
 
+#auditoria
+from app.schemas.audit import AuditLogOut
+from app.crud import audit as crud_audit
+
 router = APIRouter(
     dependencies=[Depends(require_admin_user)]  
 )
@@ -48,3 +52,10 @@ def admin_delete_user(user_id: int, db: Session = Depends(get_db)):
     if not user_db:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado")
     return crud_user.delete_user_by_admin(db=db, user_id_to_delete=user_id)
+
+
+@router.get("/audit-logs", response_model=Page[AuditLogOut], dependencies=[Depends(require_admin_user)],
+    summary="Obtener logs de auditoria de autenticacion"
+)
+def get_audit_logs(db: Session = Depends(get_db)):
+    return paginate(crud_audit.get_audit_logs_query(db=db))

@@ -11,7 +11,7 @@ from fastapi_pagination import add_pagination
 app = FastAPI(
     title="ZooConnect API",
     description="API para la gestion de un zoologico",
-    version="1.0.0",
+    version="2.0.0",
 )
 
 # CORS
@@ -31,7 +31,7 @@ app.include_router(surveys.router, prefix="/zooconnect/surveys", tags=["surveys"
 app.include_router(trivia.router, prefix="/zooconnect/trivia", tags=["trivia"])
 app.include_router(favorite_animals.router, prefix="/zooconnect/favorite_animals")
 app.include_router(vendp.router, prefix="/zooconnect/security", tags=["Seguridad 2fa:)"])
-
+add_pagination(app)
 @app.on_event("startup")
 async def startup_event():
     print("ZooConnect API iniciada")
@@ -42,6 +42,3 @@ async def startup_event():
 @app.on_event("shutdown")
 async def shutdown_event():
     print("ZooConnect API detenida")
-
-
-add_pagination(app)
