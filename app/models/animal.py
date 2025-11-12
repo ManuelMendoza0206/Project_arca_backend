@@ -1,7 +1,5 @@
 from datetime import date
-from sqlalchemy import (
-    CheckConstraint, Column, Integer, String, Text, Boolean, Date, DateTime, ForeignKey, Enum as SQLAlchemyEnum, UniqueConstraint
-)
+from sqlalchemy import CheckConstraint, Column, Integer, String, Text, Boolean, Date, DateTime, ForeignKey, Enum as SQLAlchemyEnum, UniqueConstraint
 from sqlalchemy.orm import relationship, validates
 from sqlalchemy.sql import func
 
@@ -26,6 +24,7 @@ class Especie(Base):
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
 
     animales = relationship("Animal", back_populates="especie")
+
     @validates('nombre_especie', 'nombre_cientifico', 'filo', 'clase', 'orden', 'familia', 'genero')
     def normalize_text_fields(self, key, value):
         if isinstance(value, str):
@@ -77,6 +76,8 @@ class Animal(Base):
     habitat = relationship("Habitat", back_populates="animales")
     media = relationship("MediaAnimal", back_populates="animal", cascade="all, delete-orphan")
     favorited_by_users = relationship("AnimalFavorito", back_populates="animal", cascade="all, delete-orphan")
+    #inventario
+    consumo_inventario = relationship("DetalleSalida", back_populates="animal")
     @hybrid_property
     def age(self) -> int | None:
         if not self.fecha_nacimiento:

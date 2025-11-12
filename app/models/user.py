@@ -43,6 +43,9 @@ class User(Base):
     
     #codigos usuario
     backup_codes = relationship("TwoFactorCodes", back_populates="user", cascade="all, delete-orphan")
+    #inventario
+    entradas_inventario = relationship("EntradaInventario", back_populates="usuario")
+    salidas_inventario = relationship("Salida", back_populates="usuario")
     #Pruebas
     #propeidades hibridas
     @hybrid_property

@@ -7,3 +7,4 @@ from .trivia import Trivia, ParticipacionTrivia
 from .password_reset_token import PasswordResetToken
 from .two_factor_codes import TwoFactorCodes
 from .audit_log import AuditLog
+from .inventario import TipoProducto, UnidadMedida, Proveedor, Producto, StockLote, EntradaInventario, DetalleEntrada, Salida, DetalleSalida

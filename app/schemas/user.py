@@ -42,6 +42,7 @@ class AdminUserUpdate(BaseModel):
 class UserUpdateProfile(BaseModel):
     username: Optional[str] = None
     email: Optional[EmailStr] = None
+    photo_url: Optional[str] = None
 
 class UserOut(BaseModel):
     id: int
