@@ -3,6 +3,7 @@ from typing import Optional
 from datetime import datetime, date
 from decimal import Decimal
 
+#tipoproducto
 class TipoProductoBase(BaseModel):
     nombre_tipo_producto: str
     descripcion_tipo_producto: Optional[str] = None
@@ -22,7 +23,7 @@ class TipoProductoOut(TipoProductoBase):
     created_at: datetime
     updated_at: datetime
 
-# UnidadMedida
+#unidadmedida
 class UnidadMedidaBase(BaseModel):
     nombre_unidad: str
     abreviatura: str
@@ -43,7 +44,7 @@ class UnidadMedidaOut(UnidadMedidaBase):
     created_at: datetime
     updated_at: datetime
 
-# Proveedor Schemas
+#Proveedor
 class ProveedorBase(BaseModel):
     nombre_proveedor: str
     telefono_proveedor: Optional[str] = None
@@ -66,7 +67,7 @@ class ProveedorOut(ProveedorBase):
     created_at: datetime
     updated_at: datetime
 
-#Schemas producto
+#producto
 class ProductoBase(BaseModel):
     nombre_producto: str
     descripcion_producto: Optional[str] = None

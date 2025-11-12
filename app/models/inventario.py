@@ -88,7 +88,7 @@ class StockLote(Base):
         CheckConstraint('cantidad_disponible >= 0', name='chk_cantidad_disponible_no_negativa'),
     )
 
-#Modelos de Transacciones
+#Modelos de transacciones
 
 class EntradaInventario(Base):
 

@@ -1,7 +1,7 @@
 from typing import Optional
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy.exc import IntegrityError
-from fastapi import HTTPException, status
+from fastapi import HTTPException, Query, status
 
 from app.models.inventario import  Producto,  StockLote, EntradaInventario, DetalleEntrada
 from app.models.user import User 
@@ -243,3 +243,31 @@ def create_salida_inventario(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error interno del servidor: {e}"
         )
+    
+#gets
+def get_entradas_inventario_query(db: Session) -> Query:
+    return db.query(EntradaInventario).options(
+        joinedload(EntradaInventario.usuario),
+        joinedload(EntradaInventario.proveedor),
+        
+        joinedload(EntradaInventario.detalles).options(
+            joinedload(DetalleEntrada.producto).options(
+                joinedload(Producto.tipo_producto),
+                joinedload(Producto.unidad_medida)
+            )
+        )
+    ).order_by(EntradaInventario.fecha_entrada.desc())
+
+def get_salidas_inventario_query(db: Session) -> Query:
+    return db.query(Salida).options(
+        joinedload(Salida.usuario),
+        
+        joinedload(Salida.detalles).options(
+            joinedload(DetalleSalida.animal),
+
+            joinedload(DetalleSalida.producto).options(
+                joinedload(Producto.tipo_producto),
+                joinedload(Producto.unidad_medida)
+            )
+        )
+    ).order_by(Salida.fecha_salida.desc())

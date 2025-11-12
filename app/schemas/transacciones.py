@@ -17,9 +17,6 @@ class EntradaInventarioCreate(BaseModel):
     proveedor_id: int
     detalles: List[DetalleEntradaCreate] 
 
-
-#Schemas Salidas
-
 class DetalleEntradaOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id_detalle_entrada: int

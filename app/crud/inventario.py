@@ -209,19 +209,28 @@ def get_productos_query(db: Session, include_inactive: bool = False) -> Query:
         
     return query.order_by(Producto.nombre_producto)
 
-def create_producto(db: Session, producto_in: ProductoCreate) -> Producto:
+def create_producto(
+    db: Session, 
+    producto_in: ProductoCreate,
+    photo_url: Optional[str] = None,
+    public_id: Optional[str] = None
+) -> Producto:
     _validate_producto_fks(
         db, 
         producto_in.tipo_producto_id, 
         producto_in.unidad_medida_id
     )
     
-    db_producto = Producto(**producto_in.model_dump())
+    producto_data = producto_in.model_dump()
+    producto_data['photo_url'] = photo_url
+    producto_data['public_id'] = public_id
+    db_producto = Producto(**producto_data)
     
     db.add(db_producto)
     try:
         db.commit()
         db.refresh(db_producto)
+
         db.refresh(db_producto, attribute_names=['tipo_producto', 'unidad_medida'])
         return db_producto
     except IntegrityError:
@@ -267,4 +276,30 @@ def delete_producto(db: Session, db_producto: Producto) -> Producto:
     db.add(db_producto)
     db.commit()
     db.refresh(db_producto)
+    return db_producto
+
+#
+def get_productos_con_stock_bajo_query(db: Session) -> Query:
+    query = get_productos_query(db, include_inactive=False)
+    
+    query = query.filter(
+        Producto.stock_actual <= Producto.stock_minimo
+    ).order_by(Producto.nombre_producto)
+    
+    return query
+
+def update_producto_imagen(
+    db: Session,
+    db_producto: Producto,
+    photo_url: Optional[str],
+    public_id: Optional[str]
+) -> Producto:
+    db_producto.photo_url = photo_url
+    db_producto.public_id = public_id
+    
+    db.add(db_producto)
+    db.commit()
+    db.refresh(db_producto)
+    db.refresh(db_producto, attribute_names=['tipo_producto', 'unidad_medida'])
+    
     return db_producto

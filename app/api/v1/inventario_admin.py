@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from typing import Optional
+from fastapi import APIRouter, Depends, Form, HTTPException, status
+from pydantic import ValidationError
 from sqlalchemy.orm import Session
 from fastapi_pagination import Page
 from fastapi_pagination.ext.sqlalchemy import paginate
@@ -9,6 +11,10 @@ from app.models.user import User
 from app.crud import inventario
 from app.schemas import inventario as schemas_inv
 from app.models import inventario as models_inv
+#cloudinary
+from fastapi import UploadFile, File
+from app.core.uploader import upload_to_cloudinary, delete_from_cloudinary
+
 
 router = APIRouter()
 
@@ -174,12 +180,41 @@ def soft_delete_proveedor(
     return inventario.delete_proveedor(db, db_obj)
 
 #Producto
-@router.post("/productos", response_model=schemas_inv.ProductoOut, status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_admin_user)])
+@router.post("/productos", response_model=schemas_inv.ProductoOut, status_code=status.HTTP_201_CREATED)
 def create_producto(
-    producto_in: schemas_inv.ProductoCreate,
     db: Session = Depends(get_db),
+    producto_data_json: str = Form(...),
+    file: Optional[UploadFile] = File(None, description="La imagen opcional del producto"),
+    current_user: User = Depends(require_admin_user)
 ):
-    return inventario.create_producto(db, producto_in)
+    
+    try:
+        producto_in = schemas_inv.ProductoCreate.model_validate_json(producto_data_json)
+    except ValidationError as e:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Error en los datos JSON del producto: {e.errors()}"
+        )
+    
+    photo_url = None
+    public_id = None
+    if file:
+        try:
+            upload_result = upload_to_cloudinary(file, folder="/productos")
+            photo_url = upload_result.get("secure_url")
+            public_id = upload_result.get("public_id")
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Error al subir la imagen: {e}"
+            )
+    
+    return inventario.create_producto(
+        db=db, 
+        producto_in=producto_in,
+        photo_url=photo_url,
+        public_id=public_id
+    )
 
 @router.get("/productos", response_model=Page[schemas_inv.ProductoOut], dependencies=[Depends(require_admin_user)])
 def list_productos(
@@ -205,6 +240,52 @@ def update_producto(
 
     return inventario.update_producto(db, db_obj, producto_in)
 
+@router.put("/productos/{id}/imagen", response_model=schemas_inv.ProductoOut, dependencies=[Depends(require_admin_user)])
+def update_producto_imagen(
+    id: int,
+    db_obj: models_inv.Producto = Depends(_get_producto_or_404),
+    file: UploadFile = File(..., description="La nueva imagen para reemplazar la anterior"),
+    db: Session = Depends(get_db),
+):
+    old_public_id = db_obj.public_id
+    new_public_id = None
+
+    try:
+        upload_result = upload_to_cloudinary(file, folder="/productos")
+        
+        new_secure_url = upload_result.get("secure_url")
+        new_public_id = upload_result.get("public_id")
+
+        if not new_secure_url or not new_public_id:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Error en Cloudinary: no se recibieron public_id"
+            )
+
+        db_producto_actualizado = inventario.update_producto_imagen(
+            db=db,
+            db_producto=db_obj,
+            photo_url=new_secure_url,
+            public_id=new_public_id
+        )
+
+    except Exception as e:
+        if new_public_id:
+            delete_from_cloudinary(new_public_id)
+        
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error al reemplazar la imagen: {e}"
+        )
+
+    if old_public_id:
+        try:
+            delete_from_cloudinary(old_public_id)
+        except Exception as e:
+            print(f"ADVERTENCIA: No se pudo eliminar la imagen antigua {old_public_id} de Cloudinary: {e}")
+
+    return db_producto_actualizado
+
 @router.delete( "/productos/{id}", response_model=schemas_inv.ProductoOut, dependencies=[Depends(require_admin_user)])
 def soft_delete_producto(
     db_obj: models_inv.Producto = Depends(_get_producto_or_404),
@@ -212,3 +293,28 @@ def soft_delete_producto(
 ):
 
     return inventario.delete_producto(db, db_obj)
+
+#imagenes
+
+@router.delete("/productos/{id}/imagen", response_model=schemas_inv.ProductoOut, dependencies=[Depends(require_admin_user)])
+def delete_producto_imagen(
+    id: int,
+    db_obj: models_inv.Producto = Depends(_get_producto_or_404),
+    db: Session = Depends(get_db),
+):
+    public_id_to_delete = db_obj.public_id
+
+    db_producto_actualizado = inventario.update_producto_imagen(
+        db=db,
+        db_producto=db_obj,
+        photo_url=None,
+        public_id=None
+    )
+
+    if public_id_to_delete:
+        try:
+            delete_from_cloudinary(public_id_to_delete)
+        except Exception as e:
+            print(f"Advertencia: No se pudo eliminar de Cloudinary {public_id_to_delete}: {e}")
+            
+    return db_producto_actualizado
