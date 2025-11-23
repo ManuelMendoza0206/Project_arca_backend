@@ -8,6 +8,7 @@ from alembic import context
 
 
 
+
 import os
 print("--- LISTANDO ARCHIVOS DE MIGRACION EN RENDER ---")
 

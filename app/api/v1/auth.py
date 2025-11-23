@@ -40,6 +40,7 @@ from app.core.security import verify_password
 router = APIRouter()
 
 
+
 def _get_role_claim(user: User) -> str | None:
     if user.role:
         return user.role.name
