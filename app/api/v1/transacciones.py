@@ -133,7 +133,7 @@ def update_tipo_salida(
     return crud_transacciones.update_tipo_salida(db, db_obj, tipo_in)
 
 @router.delete("/tipos-salida/{id}", response_model=schemas_tra.TipoSalidaOut, dependencies=[Depends(require_admin_user)])
-def soft_delete_tipo_salida(
+def delete_tipo_salida(
     db_obj: models_inv.TipoSalida = Depends(_get_tipo_salida_or_404),
     db: Session = Depends(get_db),
 ):
