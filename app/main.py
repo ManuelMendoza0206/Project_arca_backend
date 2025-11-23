@@ -1,17 +1,33 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.scripts.create_admin import create_default_admin
+from app.scripts.seeds import init_db 
 from app.core.config import settings
-from app.core.filesystem import ensure_upload_dirs_exist
-from app.api.v1 import auth, animals, admin_users, favorite_animals, surveys, trivia, vendp, inventario_admin, transacciones
+from app.api.v1 import auth, animals, admin_users, favorite_animals, surveys, trivia, vendp, inventario_admin, transacciones, alimentacion, tareas
 from fastapi.concurrency import run_in_threadpool
 #pagination
 from fastapi_pagination import add_pagination
+#scheduler
+from contextlib import asynccontextmanager
+from app.core.scheduler import scheduler, setup_scheduler
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    print("Iniciando aplicacion...")
+    setup_scheduler()
+    yield
+    
+    #apagado
+    print("Apagando aplicacion...")
+    if scheduler.running:
+        scheduler.shutdown()
+        print("APScheduler detenido")
 # app
 app = FastAPI(
     title="ZooConnect API",
+    lifespan=lifespan,
     description="API para la gestion de un zoologico",
-    version="2.0.0",
+    version="4.0.0",
 )
 
 # CORS
@@ -33,11 +49,14 @@ app.include_router(favorite_animals.router, prefix="/zooconnect/favorite_animals
 app.include_router(vendp.router, prefix="/zooconnect/security", tags=["Seguridad 2fa:)"])
 app.include_router(inventario_admin.router, prefix="/zooconnect/inventario", tags=["Poderoso inventario"])
 app.include_router(transacciones.router, prefix="/zooconnect/transacciones", tags=["Entradas y salidas de inventario"])
+app.include_router(alimentacion.router, prefix="/zooconnect/alimentacion", tags=["Alimentacion"])
+app.include_router(tareas.router, prefix="/zooconnect/tareas", tags=["Tareas"])
 add_pagination(app)
 @app.on_event("startup")
 async def startup_event():
     print("ZooConnect API iniciada")
     print("Verificando usuario administrador por defecto")
+    await run_in_threadpool(init_db)
     await run_in_threadpool(create_default_admin)
     print("Verificacion completa")
 

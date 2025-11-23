@@ -52,15 +52,26 @@ def require_admin_user(current_user: User = Depends(get_current_active_user)):
     return current_user
 #la logica de lo que es un admin ahora esta en el modelo
 
-ANIMAL_MANAGEMENT_ROLES = {
-    UserRole.ADMINISTRADOR.value.lower(),
-    UserRole.VETERINARIO.value.lower(),
-    UserRole.CUIDADOR.value.lower(),
-}
+ANIMAL_MANAGEMENT_ROLES = {"ADMINISTRADOR", "VETERINARIO", "CUIDADOR"}
+TASKS_MANAGEMENT_ROLES = {"ADMINISTRADOR", "CUIDADOR"}
+
 def require_animal_management_permission(current_user: User = Depends(get_current_active_user)):
     if current_user.role.name not in ANIMAL_MANAGEMENT_ROLES:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Permisos insuficientes para gestionar animales"
+        )
+    return current_user
+
+def require_task_management_permission(current_user: User = Depends(get_current_active_user)):
+    user_role = str(current_user.role.name if hasattr(current_user.role, 'name') else current_user.role).upper()
+    
+    if current_user.is_admin:
+        return current_user
+        
+    if user_role not in TASKS_MANAGEMENT_ROLES:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Permisos insuficientes para realizar esta accion"
         )
     return current_user

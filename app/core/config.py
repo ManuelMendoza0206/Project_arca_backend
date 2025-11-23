@@ -36,6 +36,8 @@ class Settings(BaseSettings):
     REDIS_HOST: str = "localhost"
     REDIS_PORT: int = 6379
     REDIS_DB: int = 0
+    #automatizacion tareas
+    TIMEZONE: str = "America/La_Paz"
     
     @property
     def REDIS_URL(self) -> str:

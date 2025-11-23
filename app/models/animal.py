@@ -24,6 +24,8 @@ class Especie(Base):
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
 
     animales = relationship("Animal", back_populates="especie")
+    #tarea
+    dieta = relationship("Dieta", back_populates="especie", uselist=False)
 
     @validates('nombre_especie', 'nombre_cientifico', 'filo', 'clase', 'orden', 'familia', 'genero')
     def normalize_text_fields(self, key, value):
@@ -47,6 +49,11 @@ class Habitat(Base):
 
     animales = relationship("Animal", back_populates="habitat")
     media = relationship("MediaHabitat", back_populates="habitat", cascade="all, delete-orphan")
+    #tareas
+    tareas = relationship("Tarea", back_populates="habitat")
+    tareas_recurrentes = relationship("TareaRecurrente", back_populates="habitat")
+    registros_alimentacion = relationship("RegistroAlimentacion", back_populates="habitat")
+    consumo_inventarios = relationship("DetalleSalida", back_populates="habitat")
     @validates('nombre_habitat', 'tipo_habitat')
     def normalize_text_fields(self, key, value):
         if isinstance(value, str):
@@ -86,6 +93,11 @@ class Animal(Base):
         return today.year - self.fecha_nacimiento.year - (
             (today.month, today.day) < (self.fecha_nacimiento.month, self.fecha_nacimiento.day)
         )
+    #tareas
+    tareas = relationship("Tarea", back_populates="animal")
+    tareas_recurrentes = relationship("TareaRecurrente", back_populates="animal")
+    dieta = relationship("Dieta", back_populates="animal", uselist=False)
+    registros_alimentacion = relationship("RegistroAlimentacion", back_populates="animal")
 
     @age.expression
     def age(cls):

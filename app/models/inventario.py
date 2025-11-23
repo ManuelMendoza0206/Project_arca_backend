@@ -26,6 +26,8 @@ class UnidadMedida(Base):
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
 
     productos = relationship("Producto", back_populates="unidad_medida")
+    #tareas
+    detalles_dieta = relationship("DetalleDieta", back_populates="unidad_medida")
 
 
 class Proveedor(Base):
@@ -68,6 +70,9 @@ class Producto(Base):
     stock_lotes = relationship("StockLote", back_populates="producto", cascade="all, delete-orphan")
     detalles_entrada = relationship("DetalleEntrada", back_populates="producto")
     detalles_salida = relationship("DetalleSalida", back_populates="producto")
+    #tarea
+    detalles_dieta = relationship("DetalleDieta", back_populates="producto")
+    detalles_alimentacion = relationship("DetalleAlimentacion", back_populates="producto")
 
 
 class StockLote(Base):
@@ -124,12 +129,28 @@ class Salida(Base):
 
     id_salida = Column(Integer, primary_key=True, index=True)
     fecha_salida = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
-    tipo_salida = Column(String(100), nullable=False)
+    tipo_salida_id = Column(Integer, ForeignKey("tipo_salidas.id_tipo_salida"), nullable=False)
     usuario_id = Column(Integer, ForeignKey("users.id"), nullable=False)
 
     usuario = relationship("User", back_populates="salidas_inventario")
-    
+    tipo_salida = relationship("TipoSalida", back_populates="salidas")
     detalles = relationship("DetalleSalida", back_populates="salida", cascade="all, delete-orphan")
+
+
+class TipoSalida(Base):
+    __tablename__ = "tipo_salidas"
+    #id 1 alimentacion
+    #id 2 medicos
+    id_tipo_salida = Column(Integer, primary_key=True, index=True)
+    nombre_tipo_salida = Column(String(100), nullable=False, unique=True)
+    descripcion_tipo_salida = Column(Text, nullable=True)
+    is_active = Column(Boolean, default=True, nullable=False)
+    
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+
+    salidas = relationship("Salida", back_populates="tipo_salida")
+
 
 
 class DetalleSalida(Base):
@@ -139,9 +160,11 @@ class DetalleSalida(Base):
     salida_id = Column(Integer, ForeignKey("salidas.id_salida"), nullable=False)
     producto_id = Column(Integer, ForeignKey("productos.id_producto"), nullable=False)
     animal_id = Column(Integer, ForeignKey("animals.id_animal"), nullable=True) 
-    
+    habitat_id = Column(Integer, ForeignKey("habitats.id_habitat"), nullable=True)
+
     cantidad_salida = Column(Numeric(10, 2), nullable=False)
 
     salida = relationship("Salida", back_populates="detalles")
     producto = relationship("Producto", back_populates="detalles_salida")
     animal = relationship("Animal", back_populates="consumo_inventario")
+    habitat = relationship("Habitat", back_populates="consumo_inventarios")

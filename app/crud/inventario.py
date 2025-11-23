@@ -25,25 +25,20 @@ def get_tipos_producto_query(db: Session, include_inactive: bool = False) -> Que
     return query.order_by(TipoProducto.nombre_tipo_producto)
 
 def create_tipo_producto(db: Session, tipo_producto_in: TipoProductoCreate) -> TipoProducto:
-    db_tipo_producto = TipoProducto(**tipo_producto_in.model_dump())
-    
-    db.add(db_tipo_producto)
-    try:
-        db.commit()
-        db.refresh(db_tipo_producto)
-        return db_tipo_producto
-    except IntegrityError:
-        db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=f"El tipo de producto con ese nombre ya existe"
-        )
+    existing = get_tipo_producto_by_nombre(db, tipo_producto_in.nombre_tipo_producto)
+    if existing:
+        msg = "El tipo de producto ya existe"
+        if not existing.is_active:
+            msg += " (Se encuentra inactivo/borrado)"
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=msg)
 
-def update_tipo_producto(
-    db: Session, 
-    db_tipo_producto: TipoProducto, 
-    tipo_producto_in: TipoProductoUpdate
-) -> TipoProducto:
+    db_tipo_producto = TipoProducto(**tipo_producto_in.model_dump())
+    db.add(db_tipo_producto)
+    db.commit()
+    db.refresh(db_tipo_producto)
+    return db_tipo_producto
+
+def update_tipo_producto(db: Session, db_tipo_producto: TipoProducto, tipo_producto_in: TipoProductoUpdate) -> TipoProducto:
     update_data = tipo_producto_in.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         setattr(db_tipo_producto, field, value)
@@ -192,6 +187,10 @@ def _validate_producto_fks(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"La Unidad de Medida ID {unidad_medida_id} no existe o esta inactiva"
         )
+    
+def get_producto_by_nombre(db: Session, nombre: str) -> Optional[Producto]:
+    return db.query(Producto).filter(Producto.nombre_producto == nombre).first()
+
 
 def get_producto(db: Session, id: int) -> Optional[Producto]:
     return db.query(Producto).options(
@@ -215,37 +214,40 @@ def create_producto(
     photo_url: Optional[str] = None,
     public_id: Optional[str] = None
 ) -> Producto:
-    _validate_producto_fks(
-        db, 
-        producto_in.tipo_producto_id, 
-        producto_in.unidad_medida_id
-    )
+    
+    existing = get_producto_by_nombre(db, producto_in.nombre_producto)
+    if existing:
+         msg = f"El producto '{producto_in.nombre_producto}' ya existe"
+         if not existing.is_active:
+             msg += " (Se encuentra inactivo)"
+         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=msg)
+
+    _validate_producto_fks(db, producto_in.tipo_producto_id, producto_in.unidad_medida_id)
     
     producto_data = producto_in.model_dump()
     producto_data['photo_url'] = photo_url
     producto_data['public_id'] = public_id
-    db_producto = Producto(**producto_data)
+
     
+    db_producto = Producto(**producto_data)
     db.add(db_producto)
     try:
         db.commit()
         db.refresh(db_producto)
-
         db.refresh(db_producto, attribute_names=['tipo_producto', 'unidad_medida'])
         return db_producto
-    except IntegrityError:
+    except IntegrityError as e:
         db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=f"El producto con nombre '{producto_in.nombre_producto}' ya existe"
-        )
+        print(f"Error creando producto: {e}") 
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Error de integridad al crear producto")
 
 def update_producto(
     db: Session, 
     db_producto: Producto, 
     producto_in: ProductoUpdate
 ) -> Producto:
-    update_data = producto_in.model_dump(exclude_unset=True)
+    excluded_fields = {"stock_actual"} 
+    update_data = producto_in.model_dump(exclude_unset=True, exclude=excluded_fields)
 
     if "tipo_producto_id" in update_data or "unidad_medida_id" in update_data:
         _validate_producto_fks(
@@ -253,25 +255,21 @@ def update_producto(
             tipo_producto_id=update_data.get("tipo_producto_id", db_producto.tipo_producto_id),
             unidad_medida_id=update_data.get("unidad_medida_id", db_producto.unidad_medida_id)
         )
-    
+
     for field, value in update_data.items():
         setattr(db_producto, field, value)
         
-    db.add(db_producto)
     try:
+        db.add(db_producto)
         db.commit()
         db.refresh(db_producto)
         db.refresh(db_producto, attribute_names=['tipo_producto', 'unidad_medida'])
         return db_producto
     except IntegrityError:
         db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=f"El nombre del producto ya existe"
-        )
-
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="El nombre del producto ya existe")
+    
 def delete_producto(db: Session, db_producto: Producto) -> Producto:
-
     db_producto.is_active = False
     db.add(db_producto)
     db.commit()
@@ -280,7 +278,11 @@ def delete_producto(db: Session, db_producto: Producto) -> Producto:
 
 #
 def get_productos_con_stock_bajo_query(db: Session) -> Query:
-    query = get_productos_query(db, include_inactive=False)
+    query = db.query(Producto).options(
+        joinedload(Producto.tipo_producto),
+        joinedload(Producto.unidad_medida)
+    )
+    query = query.filter(Producto.is_active == True)
     
     query = query.filter(
         Producto.stock_actual <= Producto.stock_minimo

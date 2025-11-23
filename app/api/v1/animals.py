@@ -141,7 +141,7 @@ def delete_animal(animal_id: int, db: Session = Depends(get_db)):
 
 # --- Media ---
 
-@router.post("/animals/{animal_id}/media", response_model=MediaOutAnimal, tags=["Animales", "Media"], status_code=status.HTTP_201_CREATED)
+@router.post("/animals/{animal_id}/media", response_model=MediaOutAnimal, tags=["Media"], status_code=status.HTTP_201_CREATED)
 def upload_animal_media(
     animal_id: int,
     db: Session = Depends(get_db),
@@ -191,7 +191,7 @@ def delete_animal_media_file(media_id: int, db: Session = Depends(get_db), curre
     
     return None
 
-@router.get("/animals/{animal_id}/media", response_model=Page[MediaOutAnimal], tags=["Animales", "Media"])
+@router.get("/animals/{animal_id}/media", response_model=Page[MediaOutAnimal], tags=["Media"])
 def get_all_media_for_animal(animal_id: int, db: Session = Depends(get_db)):
     db_animal = crud_animal.get_animal(db, animal_id)
     if not db_animal:

@@ -1,6 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from typing import List
 
 from app.db.session import get_db
 from app.core.dependencies import get_current_active_user
@@ -34,6 +33,6 @@ def remove_favorite(animal_id: int, db: Session = Depends(get_db), current_user:
         )
     return None
 
-@router.get("/favorites/", response_model=List[AnimalFavoritoOut], tags=["Usuario - Favoritos"])
+@router.get("/favorites/", response_model=Page[AnimalFavoritoOut], tags=["Usuario - Favoritos"])
 def list_my_favorites( db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user) ):
     return paginate(crud_animal.list_user_favorites(db, user_id=current_user.id))
