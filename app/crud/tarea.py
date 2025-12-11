@@ -16,7 +16,7 @@ from app.schemas.tarea import (
     TipoTareaCreate, TipoTareaUpdate,
     TareaRecurrenteCreate, TareaRecurrenteUpdate, 
     TareaCreate,
-    TareaAlimentacionCompletar, DetalleAlimentacionCreate
+    TareaAlimentacionCompletar, DetalleAlimentacionCreate, TareaTratamientoCompletar
 )
 from app.schemas.transacciones import DetalleSalidaCreate
 
@@ -333,3 +333,70 @@ def completar_tarea_alimentacion(
         db.rollback()
         print(f"Error critico completando tarea: {e}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Error interno del servidor")
+    
+def completar_tarea_tratamiento(
+    db: Session,
+    db_tarea: Tarea,
+    db_usuario: User,
+    payload: TareaTratamientoCompletar
+) -> Tarea:
+    
+    if db_tarea.is_completed:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="La tarea ya ha sido completada")
+
+    if not db_usuario.is_admin and db_tarea.usuario_asignado_id != db_usuario.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No tienes permisos para completar esta tarea")
+
+    if db_tarea.tipo_tarea_id != 2: 
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Esta no es una tarea de tratamiento medico")
+
+    if not payload.detalles:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Debe indicar que producto uso")
+
+    target_animal_id = db_tarea.animal_id
+    target_habitat_id = db_tarea.habitat_id
+
+    if not target_animal_id and not target_habitat_id:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="La tarea no tiene un destino valido")
+
+    try:
+        detalles_salida = []
+        for d in payload.detalles:
+            if d.cantidad_consumida > 0:
+                detalles_salida.append(
+                    DetalleSalidaCreate(
+                        producto_id=d.producto_id,
+                        cantidad_salida=d.cantidad_consumida,
+                        animal_id=target_animal_id,
+                        habitat_id=target_habitat_id
+                    )
+                )
+
+        if not detalles_salida:
+             raise ValueError("La cantidad consumida debe ser mayor a 0")
+
+        _ = _procesar_salida_transaccional(
+            db=db,
+            tipo_salida_id=2, 
+            detalles=detalles_salida,
+            usuario_id=db_usuario.id
+        )
+
+        db_tarea.is_completed = True
+        db_tarea.fecha_completada = datetime.now()
+        db_tarea.notas_completacion = payload.notas_observaciones
+        
+
+        db.add(db_tarea)
+        db.commit()
+        db.refresh(db_tarea)
+        
+        return db_tarea
+
+    except (ValueError, IntegrityError) as e:
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Error validando datos: {e}")
+    except Exception as e:
+        db.rollback()
+        print(f"Error crítico completando tratamiento: {e}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno del servidor")

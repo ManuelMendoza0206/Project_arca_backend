@@ -50,6 +50,9 @@ class User(Base):
     tareas_asignadas = relationship("Tarea", back_populates="usuario_asignado", foreign_keys="[Tarea.usuario_asignado_id]")
     tareas_recurrentes_asignadas = relationship("TareaRecurrente", back_populates="usuario_asignado", foreign_keys="[TareaRecurrente.usuario_asignado_id]")
     registros_alimentacion = relationship("RegistroAlimentacion", back_populates="usuario")
+    #veterinario
+    historiales_creados = relationship("HistorialMedico", back_populates="veterinario")
+    recetas_asignadas = relationship("RecetaMedica", back_populates="usuario_asignado")
     #Pruebas
     #propeidades hibridas
     @hybrid_property

@@ -212,3 +212,21 @@ def completar_tarea_alimentacion(
         db_usuario=current_user,
         payload=body
     )
+
+@router.post("/{id_tarea}/completar-tratamiento", response_model=schemas_tarea.TareaOut)
+def complete_task_tratamiento(
+    id_tarea: int,
+    payload: schemas_tarea.TareaTratamientoCompletar,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    tarea = crud_tarea.get_tarea(db, id_tarea)
+    if not tarea:
+        raise HTTPException(status_code=404, detail="Tarea no encontrada")
+
+    return crud_tarea.completar_tarea_tratamiento(
+        db=db, 
+        db_tarea=tarea, 
+        db_usuario=current_user, 
+        payload=payload
+    )

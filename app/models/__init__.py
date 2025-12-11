@@ -9,3 +9,4 @@ from .two_factor_codes import TwoFactorCodes
 from .audit_log import AuditLog
 from .inventario import TipoProducto, UnidadMedida, Proveedor, Producto, StockLote, EntradaInventario, DetalleEntrada, Salida, DetalleSalida
 from .tarea import TipoTarea, Tarea, DetalleAlimentacion, TareaRecurrente, Dieta, DetalleDieta, RegistroAlimentacion
+from .veterinario import TipoAtencion, TipoExamen, HistorialMedico, OrdenExamen, ResultadoExamen, RecetaMedica, ProcedimientoMedico

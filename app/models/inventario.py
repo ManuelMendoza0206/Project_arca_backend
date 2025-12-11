@@ -28,6 +28,8 @@ class UnidadMedida(Base):
     productos = relationship("Producto", back_populates="unidad_medida")
     #tareas
     detalles_dieta = relationship("DetalleDieta", back_populates="unidad_medida")
+    #veterianrio
+    recetas_asociadas = relationship("RecetaMedica", back_populates="unidad_medida")
 
 
 class Proveedor(Base):
@@ -73,6 +75,8 @@ class Producto(Base):
     #tarea
     detalles_dieta = relationship("DetalleDieta", back_populates="producto")
     detalles_alimentacion = relationship("DetalleAlimentacion", back_populates="producto")
+    #veterinario
+    recetas_asociadas = relationship("RecetaMedica", back_populates="producto")
 
 
 class StockLote(Base):

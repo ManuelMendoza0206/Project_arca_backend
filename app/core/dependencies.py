@@ -55,11 +55,19 @@ def require_admin_user(current_user: User = Depends(get_current_active_user)):
 ANIMAL_MANAGEMENT_ROLES = {"ADMINISTRADOR", "VETERINARIO", "CUIDADOR"}
 TASKS_MANAGEMENT_ROLES = {"ADMINISTRADOR", "CUIDADOR"}
 
-def require_animal_management_permission(current_user: User = Depends(get_current_active_user)):
-    if current_user.role.name not in ANIMAL_MANAGEMENT_ROLES:
+def require_animal_management_permission(
+    current_user: User = Depends(get_current_active_user),
+):
+    user_role = str(
+        current_user.role.name
+        if hasattr(current_user.role, "name")
+        else current_user.role
+    ).upper()
+
+    if user_role not in ANIMAL_MANAGEMENT_ROLES:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Permisos insuficientes para gestionar animales"
+            detail="Permisos insuficientes para gestionar animales",
         )
     return current_user
 
@@ -73,5 +81,38 @@ def require_task_management_permission(current_user: User = Depends(get_current_
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Permisos insuficientes para realizar esta accion"
+        )
+    return current_user
+
+#jesus
+INVENTORY_READ_ROLES = {"ADMINISTRADOR", "VETERINARIO", "CUIDADOR"}
+
+
+def require_inventory_read_permission(
+    current_user: User = Depends(get_current_active_user),
+):
+    if getattr(current_user, "is_admin", False):
+        return current_user
+
+    role_obj = current_user.role
+    role_name = str(getattr(role_obj, "name", role_obj))
+
+    user_role = role_name.upper()
+
+    if user_role not in INVENTORY_READ_ROLES:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Permisos insuficientes para ver el inventario",
+        )
+
+    return current_user
+
+
+def require_veterinario(current_user: User = Depends(get_current_active_user)):
+    is_vet = current_user.role.name.upper() == "VETERINARIO" or current_user.role_id == 4
+    if not is_vet:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Se requieren permisos de Veterinario para realizar esta accion"
         )
     return current_user

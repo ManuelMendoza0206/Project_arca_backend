@@ -52,8 +52,8 @@ def setup_scheduler():
     scheduler.add_job(
         job_wrapper_generar_tareas,
         trigger="cron",
-        hour=21,
-        minute=15,
+        hour=15,
+        minute=25,
         id="job_generar_tareas_diarias",
         name="Generar Tareas Recurrentes Diarias",
         replace_existing=True

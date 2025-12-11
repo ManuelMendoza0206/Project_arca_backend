@@ -127,3 +127,12 @@ class RegistroAlimentacionOut(BaseModel):
     animal: Optional[AnimalOut] = None
     habitat: Optional[HabitatOut] = None
     detalles_alimentacion: List[DetalleAlimentacionOut]
+
+#veterinario
+class DetalleTratamientoCreate(BaseModel):
+    producto_id: int
+    cantidad_consumida: Decimal
+
+class TareaTratamientoCompletar(BaseModel):
+    notas_observaciones: Optional[str] = None
+    detalles: List[DetalleTratamientoCreate]

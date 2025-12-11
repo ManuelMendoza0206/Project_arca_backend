@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from croniter import croniter
 from app.db.session import SessionLocal
 from app.models.tarea import TareaRecurrente, Tarea
@@ -22,9 +22,10 @@ def generar_tareas_diarias():
 
         for plantilla in plantillas:
             try:
-                base_time = datetime(today.year, today.month, today.day, 0, 0)
-                cron = croniter(plantilla.frecuencia_cron, base_time)
+                midnight_today = datetime(today.year, today.month, today.day, 0, 0)
+                base_time = midnight_today - timedelta(seconds=1) 
                 
+                cron = croniter(plantilla.frecuencia_cron, base_time)
                 next_run = cron.get_next(datetime)
 
                 if next_run.date() != today:
@@ -48,7 +49,8 @@ def generar_tareas_diarias():
                     habitat_id=plantilla.habitat_id,
                     tarea_recurrente_id=plantilla.id_tarea_recurrente,
                     fecha_programada=today,
-                    usuario_asignado_id=None,
+                    usuario_asignado_id=plantilla.usuario_asignado_id, 
+                    
                     is_completed=False
                 )
 
@@ -65,7 +67,7 @@ def generar_tareas_diarias():
         print(f"Job completado. Creadas: {tareas_creadas_count}. Errores: {errores_count}")
 
     except Exception as e:
-        print(f"¡ERROR CRITICO! El job 'generar_tareas_diarias' fallo a nivel general: {e}")
+        print(f" ERROR El job 'generar_tareas_diarias' fallo a nivel general: {e}")
     
     finally:
         db.close()

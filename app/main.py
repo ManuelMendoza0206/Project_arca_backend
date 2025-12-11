@@ -12,7 +12,7 @@ from app.core.scheduler import scheduler, setup_scheduler
 from app.api.v1 import (
     auth, animals, admin_users, favorite_animals, surveys, 
     trivia, vendp, inventario_admin, transacciones, 
-    alimentacion, tareas
+    alimentacion, tareas, veterinario
 )
 
 @asynccontextmanager
@@ -32,7 +32,6 @@ async def lifespan(app: FastAPI):
     
     yield
     
-
     print("Apagando Zoocoonect")
     if scheduler.running:
         scheduler.shutdown()
@@ -67,5 +66,6 @@ app.include_router(inventario_admin.router, prefix="/zooconnect/inventario", tag
 app.include_router(transacciones.router, prefix="/zooconnect/transacciones", tags=["Entradas y salidas de inventario"])
 app.include_router(alimentacion.router, prefix="/zooconnect/alimentacion", tags=["Alimentacion"])
 app.include_router(tareas.router, prefix="/zooconnect/tareas", tags=["Tareas"]) 
+app.include_router(veterinario.router, prefix="/zooconnect/veterinario", tags=["Cruz Roja"]) 
 
 add_pagination(app)

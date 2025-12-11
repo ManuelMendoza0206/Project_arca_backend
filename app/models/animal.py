@@ -98,6 +98,8 @@ class Animal(Base):
     tareas_recurrentes = relationship("TareaRecurrente", back_populates="animal")
     dieta = relationship("Dieta", back_populates="animal", uselist=False)
     registros_alimentacion = relationship("RegistroAlimentacion", back_populates="animal")
+    #veterinario
+    historiales = relationship("HistorialMedico", back_populates="animal")
 
     @age.expression
     def age(cls):
