@@ -12,7 +12,7 @@ from app.core.scheduler import scheduler, setup_scheduler
 from app.api.v1 import (
     auth, animals, admin_users, favorite_animals, surveys, 
     trivia, vendp, inventario_admin, transacciones, 
-    alimentacion, tareas, veterinario
+    alimentacion, tareas, veterinario, dashboards
 )
 
 @asynccontextmanager
@@ -67,5 +67,6 @@ app.include_router(transacciones.router, prefix="/zooconnect/transacciones", tag
 app.include_router(alimentacion.router, prefix="/zooconnect/alimentacion", tags=["Alimentacion"])
 app.include_router(tareas.router, prefix="/zooconnect/tareas", tags=["Tareas"]) 
 app.include_router(veterinario.router, prefix="/zooconnect/veterinario", tags=["Cruz Roja"]) 
+app.include_router(dashboards.router, prefix="/zooconnect/dashboards", tags=["Jesus"]) 
 
 add_pagination(app)

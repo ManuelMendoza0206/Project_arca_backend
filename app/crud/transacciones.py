@@ -4,10 +4,11 @@ from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException, Query, status
 from datetime import date
 from decimal import Decimal
+from sqlalchemy import desc, asc
 
 from app.models.inventario import (
     Producto, StockLote, EntradaInventario, DetalleEntrada, 
-    TipoSalida, Salida, DetalleSalida
+    TipoSalida, Salida, DetalleSalida, Proveedor
 )
 from app.models.user import User
 from app.models.animal import Animal, Habitat
@@ -297,24 +298,53 @@ def create_salida_inventario(
 
 #consultas de estado
 
-def get_entradas_inventario_query(db: Session) -> Query:
-    return db.query(EntradaInventario).options(
+def get_entradas_inventario_query(
+    db: Session, 
+    sort_by: Optional[str] = "fecha", 
+    order: Optional[str] = "desc"
+) -> Query:
+    
+    query = db.query(EntradaInventario).options(
         joinedload(EntradaInventario.usuario),
         joinedload(EntradaInventario.proveedor),
-        
         joinedload(EntradaInventario.detalles).options(
             joinedload(DetalleEntrada.producto).options(
                 joinedload(Producto.tipo_producto),
                 joinedload(Producto.unidad_medida)
             )
         )
-    ).order_by(EntradaInventario.fecha_entrada.desc())
+    )
 
-def get_salidas_inventario_query(db: Session) -> Query:
-    return db.query(Salida).options(
+    def get_sort_col(column):
+        return desc(column) if order == "desc" else asc(column)
+
+    if sort_by == "proveedor":
+        query = query.join(EntradaInventario.proveedor).order_by(
+            get_sort_col(Proveedor.nombre_proveedor)
+        )
+        
+    elif sort_by == "usuario":
+        query = query.join(EntradaInventario.usuario).order_by(
+            get_sort_col(User.email)
+        )
+        
+    else:
+        query = query.order_by(
+            get_sort_col(EntradaInventario.fecha_entrada)
+        )
+
+    return query
+
+
+def get_salidas_inventario_query(
+    db: Session,
+    sort_by: Optional[str] = "fecha",
+    order: Optional[str] = "desc"
+) -> Query:
+
+    query = db.query(Salida).options(
         joinedload(Salida.usuario),
         joinedload(Salida.tipo_salida),
-        
         joinedload(Salida.detalles).options(
             joinedload(DetalleSalida.animal),
             joinedload(DetalleSalida.habitat),
@@ -323,5 +353,24 @@ def get_salidas_inventario_query(db: Session) -> Query:
                 joinedload(Producto.unidad_medida)
             )
         )
-    ).order_by(Salida.fecha_salida.desc())
+    )
 
+    def get_sort_col(column):
+        return desc(column) if order == "desc" else asc(column)
+
+    if sort_by == "tipo_salida":
+        query = query.join(Salida.tipo_salida).order_by(
+            get_sort_col(TipoSalida.nombre_tipo_salida)
+        )
+        
+    elif sort_by == "usuario":
+        query = query.join(Salida.usuario).order_by(
+            get_sort_col(User.email)
+        )
+        
+    else:
+        query = query.order_by(
+            get_sort_col(Salida.fecha_salida)
+        )
+
+    return query

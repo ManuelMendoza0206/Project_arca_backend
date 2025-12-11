@@ -19,9 +19,6 @@ def setup_2fa(
     db: Session = Depends(get_db), 
     current_user: User = Depends(get_current_active_user)
 ):
-    """
-    Paso 1: Genera un secreto y una URI para el QR --> Uusuario escanea
-    """
     if current_user.is_totp_enabled:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="2FA esta activo:)")
     
@@ -40,9 +37,6 @@ def verify_2fa(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):
-    """
-    Paso 2: El usuario envia el codigo de la app
-    """
     if current_user.is_totp_enabled:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="2FA esta activo:)")
     if not current_user.totp_secret:
