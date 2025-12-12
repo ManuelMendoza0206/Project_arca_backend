@@ -1,5 +1,5 @@
 from typing import Optional
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status, Query
 from fastapi_pagination import Page
 from fastapi_pagination.ext.sqlalchemy import paginate
 from pydantic import ValidationError
@@ -312,18 +312,20 @@ def create_producto(
         raise e
 
 
-@router.get(
-    "/productos",
-    response_model=Page[schemas_inv.ProductoOut],
-    dependencies=[Depends(require_inventory_read_permission)],
-)
+@router.get("/productos", response_model=Page[schemas_inv.ProductoOut], dependencies=[Depends(require_inventory_read_permission)])
 def list_productos(
     include_inactive: bool = False,
+    tipo_producto_id: Optional[int] = Query(None, description="Filtrar por ID de tipo de producto"),
+    nombre: Optional[str] = Query(None, description="Buscar por nombre del producto"),
     db: Session = Depends(get_db),
 ):
-    query = inventario.get_productos_query(db, include_inactive)
+    query = inventario.get_productos_query(
+        db, 
+        include_inactive=include_inactive,
+        tipo_producto_id=tipo_producto_id,
+        nombre=nombre
+    )
     return paginate(query)
-
 
 @router.get(
     "/productos/{id}",

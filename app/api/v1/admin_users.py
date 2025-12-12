@@ -1,7 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from typing import List
 from sqlalchemy.orm import Session
-
+from typing import Optional
 from app.db.session import get_db
 from app.crud import user as crud_user
 from app.schemas.user import UserOut, AdminUserCreate, AdminUserUpdate
@@ -21,9 +21,18 @@ router = APIRouter(
 )
 
 @router.get("/users", response_model=Page[UserOutWithRole], dependencies=[Depends(require_admin_user)])
-def admin_list_users(db: Session = Depends(get_db)):
-    return paginate(crud_user.get_users_query(db=db))
-
+def admin_list_users(
+    role_id: Optional[int] = Query(None, description="Filtrar por ID de Rol (1:Admin, 3:Cuidador, 4:Vet)"),
+    is_active: Optional[bool] = Query(None, description="Filtrar por estado activo/inactivo"),
+    search: Optional[str] = Query(None, description="Buscar por nombre o email"),
+    db: Session = Depends(get_db)
+):
+    return paginate(crud_user.get_users_query(
+        db=db, 
+        role_id=role_id, 
+        is_active=is_active, 
+        search=search
+    ))
 
 
 @router.get("/users/{user_id}", response_model=UserOut)

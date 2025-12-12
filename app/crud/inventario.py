@@ -198,13 +198,25 @@ def get_producto(db: Session, id: int) -> Optional[Producto]:
         joinedload(Producto.unidad_medida)
     ).filter(Producto.id_producto == id).first()
 
-def get_productos_query(db: Session, include_inactive: bool = False) -> Query:
+def get_productos_query(
+    db: Session, 
+    include_inactive: bool = False,
+    tipo_producto_id: Optional[int] = None,
+    nombre: Optional[str] = None
+) -> Query:
+    
     query = db.query(Producto).options(
         joinedload(Producto.tipo_producto),
         joinedload(Producto.unidad_medida)
     )
     if not include_inactive:
         query = query.filter(Producto.is_active == True)
+        
+    if tipo_producto_id:
+        query = query.filter(Producto.tipo_producto_id == tipo_producto_id)
+
+    if nombre:
+        query = query.filter(Producto.nombre_producto.ilike(f"%{nombre}%"))
         
     return query.order_by(Producto.nombre_producto)
 
