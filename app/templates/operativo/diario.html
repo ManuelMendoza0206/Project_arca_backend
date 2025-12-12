@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block title %}Reporte Diario Operativo{% endblock %}
+
+{% block content %}
+    <h1>Reporte Diario Operativo</h1>
+    
+    <div class="kpi-container">
+        <div class="kpi-box">
+            <span class="kpi-value">{{ tareas_total }}</span>
+            <span class="kpi-label">Tareas Totales</span>
+        </div>
+        <div class="kpi-box">
+            <span class="kpi-value">{{ tareas_completadas }}</span>
+            <span class="kpi-label">Completadas</span>
+        </div>
+        <div class="kpi-box">
+            <span class="kpi-value" style="color: {% if tareas_pendientes > 0 %}#EF4444{% else %}#10B981{% endif %};">
+                {{ tareas_pendientes }}
+            </span>
+            <span class="kpi-label">Pendientes / Sin Asignar</span>
+        </div>
+    </div>
+
+    {% if alertas_tareas %}
+    <div style="background-color: #FEF2F2; border: 1px solid #FCA5A5; color: #991B1B; padding: 10px; margin-bottom: 20px; border-radius: 5px;">
+        <strong>⚠️ ATENCIÓN REQUERIDA:</strong> Hay {{ alertas_tareas|length }} tareas críticas sin personal asignado o atrasadas.
+    </div>
+    {% endif %}
+
+    <h2>Detalle de Operaciones (Hoy)</h2>
+    <table>
+        <thead>
+            <tr>
+                <th width="10%">Hora</th>
+                <th width="35%">Tarea</th>
+                <th width="20%">Zona / Hábitat</th>
+                <th width="20%">Asignado a</th>
+                <th width="15%">Estado</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for tarea in tareas %}
+            <tr>
+                <td>{{ tarea.hora }}</td>
+                <td>{{ tarea.descripcion }}</td>
+                <td>{{ tarea.zona }}</td>
+                <td>{{ tarea.asignado_a }}</td>
+                <td>
+                    {% if tarea.estado == 'Completada' %}
+                        <span class="badge badge-success">Completado</span>
+                    {% elif tarea.estado == 'Pendiente' %}
+                        <span class="badge badge-warning">Pendiente</span>
+                    {% else %}
+                        <span class="badge badge-danger">{{ tarea.estado }}</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="signatures">
+        <div class="signature-line">
+            Firma Supervisor de Turno
+        </div>
+    </div>
+{% endblock %}

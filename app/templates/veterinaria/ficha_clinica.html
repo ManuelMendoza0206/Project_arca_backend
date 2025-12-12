@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block title %}Historia Clínica #{{ historial.id }}{% endblock %}
+
+{% block content %}
+    <h1>Historia Clínica Veterinaria</h1>
+    
+    <div style="background-color: #F3F4F6; padding: 15px; border-radius: 8px; margin-bottom: 20px; display: flex;">
+        <div style="width: 50%;">
+            <strong>Paciente:</strong> {{ animal.nombre }} <br>
+            <strong>Especie:</strong> {{ animal.especie }} <br>
+            <strong>Sexo:</strong> {{ animal.sexo }} | <strong>Edad:</strong> {{ animal.edad }}
+        </div>
+        <div style="width: 50%;">
+            <strong>ID Historial:</strong> #{{ historial.id }} <br>
+            <strong>Fecha Atención:</strong> {{ historial.fecha }} <br>
+            <strong>Veterinario:</strong> {{ historial.veterinario }}
+        </div>
+    </div>
+
+    <h2>1. Anamnesis (Motivo de Consulta)</h2>
+    <p style="border: 1px solid #E5E7EB; padding: 10px; background-color: #FFF;">
+        {{ historial.anamnesis }}
+    </p>
+
+    <h2>2. Examen Físico (Objetivo)</h2>
+    <table style="width: 50%;">
+        <tr>
+            <th>Peso</th>
+            <td>{{ historial.peso }} kg</td>
+            <th>Temp</th>
+            <td>{{ historial.temperatura }} °C</td>
+        </tr>
+        <tr>
+            <th>FC (lpm)</th>
+            <td>{{ historial.fc }}</td>
+            <th>FR (rpm)</th>
+            <td>{{ historial.fr }}</td>
+        </tr>
+    </table>
+    <p><strong>Observaciones Físicas:</strong> {{ historial.observaciones_fisicas }}</p>
+
+    <h2>3. Diagnóstico</h2>
+    <ul>
+        <li><strong>Presuntivo:</strong> {{ historial.diagnostico_presuntivo }}</li>
+        <li><strong>Definitivo:</strong> {{ historial.diagnostico_definitivo or "Pendiente" }}</li>
+    </ul>
+
+    <h2>4. Tratamiento Indicado</h2>
+    {% if recetas %}
+    <table>
+        <thead>
+            <tr>
+                <th>Medicamento</th>
+                <th>Dosis</th>
+                <th>Frecuencia</th>
+                <th>Duración</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for receta in recetas %}
+            <tr>
+                <td>{{ receta.producto }}</td>
+                <td>{{ receta.dosis }} {{ receta.unidad }}</td>
+                <td>{{ receta.frecuencia }}</td>
+                <td>{{ receta.duracion }} días</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+        <p>No se recetaron medicamentos.</p>
+    {% endif %}
+
+{% endblock %}

@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}Reporte ZooConnect{% endblock %}</title>
+    <link rel="stylesheet" href="{{ css_path }}">
+</head>
+<body>
+    <div class="header-container">
+        <div>
+            <img src="{{ logo_path }}" class="logo" alt="ZooConnect Logo">
+        </div>
+        <div class="company-info">
+            <h1 class="company-name">ZooConnect</h1>
+            <div class="report-date">Generado el: {{ fecha_generacion }}</div>
+            <div class="report-date">Usuario: {{ usuario_generador }}</div>
+        </div>
+    </div>
+
+    <div class="content">
+        {% block content %}{% endblock %}
+    </div>
+</body>
+</html>

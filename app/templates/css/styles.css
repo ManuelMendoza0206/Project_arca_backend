@@ -1,0 +1,143 @@
+@page {
+    size: A4;
+    margin: 2cm;
+    @bottom-right {
+        content: "Página " counter(page) " de " counter(pages);
+        font-family: 'Helvetica', sans-serif;
+        font-size: 9pt;
+        color: #666;
+    }
+}
+
+body {
+    font-family: 'Helvetica', 'Arial', sans-serif;
+    font-size: 10pt;
+    color: #333;
+    line-height: 1.4;
+}
+
+.header-container {
+    border-bottom: 2px solid #10B981; /* Verde ZooConnect */
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.logo {
+    height: 50px;
+    width: auto;
+}
+
+.company-info {
+    text-align: right;
+}
+
+.company-name {
+    font-size: 16pt;
+    font-weight: bold;
+    color: #065F46;
+    margin: 0;
+}
+
+.report-date {
+    font-size: 9pt;
+    color: #666;
+}
+
+h1 {
+    font-size: 18pt;
+    color: #065F46;
+    margin-bottom: 15px;
+    text-transform: uppercase;
+}
+
+h2 {
+    font-size: 14pt;
+    color: #10B981;
+    border-left: 5px solid #10B981;
+    padding-left: 10px;
+    margin-top: 20px;
+    margin-bottom: 10px;
+}
+
+.kpi-container {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+}
+
+.kpi-box {
+    background-color: #F3F4F6;
+    border: 1px solid #E5E7EB;
+    padding: 10px;
+    border-radius: 5px;
+    text-align: center;
+    width: 30%;
+}
+
+.kpi-value {
+    font-size: 16pt;
+    font-weight: bold;
+    color: #111;
+    display: block;
+}
+
+.kpi-label {
+    font-size: 8pt;
+    text-transform: uppercase;
+    color: #666;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+}
+
+th {
+    background-color: #065F46;
+    color: white;
+    font-weight: bold;
+    padding: 8px;
+    text-align: left;
+    font-size: 9pt;
+}
+
+td {
+    border-bottom: 1px solid #E5E7EB;
+    padding: 8px;
+    font-size: 9pt;
+}
+
+tr:nth-child(even) {
+    background-color: #F9FAFB;
+}
+
+
+.badge {
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 8pt;
+    font-weight: bold;
+    color: white;
+}
+.badge-success { background-color: #10B981; } /* Completado */
+.badge-warning { background-color: #F59E0B; } /* Pendiente */
+.badge-danger { background-color: #EF4444; }  /* Crítico */
+
+
+.signatures {
+    margin-top: 50px;
+    page-break-inside: avoid;
+}
+.signature-line {
+    border-top: 1px solid #333;
+    width: 40%;
+    margin-top: 40px;
+    text-align: center;
+    font-size: 8pt;
+    padding-top: 5px;
+    float: right; /* Firma a la derecha */
+}
